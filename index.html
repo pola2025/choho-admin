@@ -110,9 +110,7 @@
     <div class="login-container" id="loginScreen">
         <div class="login-box">
             <h1>초호펜션 관리 시스템</h1>
-            <!-- [수정] onkeyup 이벤트 제거 -->
             <input type="password" id="passwordInput" class="login-input" placeholder="비밀번호를 입력하세요">
-            <!-- [수정] onclick 이벤트 제거, id 추가 -->
             <button id="loginButton" class="login-button">로그인</button>
         </div>
     </div>
@@ -128,7 +126,6 @@
                         <div class="sync-dot"></div>
                         <span id="lastSync">실시간 동기화 중</span>
                     </div>
-                    <!-- [수정] onclick 이벤트 제거, id 추가 -->
                     <button id="logoutButton" class="logout-btn">로그아웃</button>
                 </div>
             </div>
@@ -142,7 +139,7 @@
             <div class="stat-card accent-purple"><h3>이번달 매출</h3><div class="stat-value" id="monthlyRevenue">0원</div></div>
         </div>
         
-        <!-- 탭 네비게이션 (여기는 동적 생성이 아니므로 onclick 유지해도 괜찮습니다) -->
+        <!-- 탭 네비게이션 -->
         <div class="tabs">
             <div class="tabs-content">
                 <div class="tab active" onclick="switchTab(event, 'reservations')">
@@ -179,7 +176,6 @@
             <div class="tab-content" id="calendarTab"><div style="text-align: center; padding: 50px;"><h3>캘린더 뷰는 추후 업데이트 예정입니다</h3></div></div>
         </div>
         
-        <!-- [수정] onclick 이벤트 제거, id 추가 -->
         <button id="addReservationButton" class="floating-add-btn">+</button>
     </div>
     
@@ -188,7 +184,6 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="modalTitle">새 예약 추가</h2>
-                <!-- [수정] onclick 이벤트 제거, id 추가 -->
                 <button id="closeModalButton" style="background: none; border: none; font-size: 24px; cursor: pointer;">×</button>
             </div>
             <div class="modal-body">
@@ -219,9 +214,7 @@
                     <div class="form-group"><label class="form-label">요청사항</label><textarea class="form-input" id="formRequests" rows="3"></textarea></div>
                     <div class="form-group"><label class="form-label">금액</label><input type="number" class="form-input" id="formAmount" placeholder="자동 계산됩니다"></div>
                     <div style="display: flex; gap: 10px; margin-top: 20px;">
-                        <!-- [수정] onclick 이벤트 제거, id 추가 -->
                         <button type="button" id="cancelModalButton" class="action-btn btn-secondary" style="flex: 1;">취소</button>
-                        <!-- [수정] onclick 이벤트 제거, id 추가 -->
                         <button type="button" id="saveReservationButton" class="action-btn btn-success" style="flex: 1;">저장</button>
                     </div>
                 </form>
@@ -236,7 +229,7 @@
         // =================================================================
         // CONFIGURATION (설정)
         // =================================================================
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyf1uO6YbwbstD_AQysbVTnYLZ9t6zUBOqEAvxau0waYm_BPyVogL6gXiMQTUka-JRp/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyVq6oIIpIXHMAaODsGp-I8CHzdC_qQ3qrjlj2mPB8E3G6NDIe6GMMu-ROYI3oUHjFP/exec';
 
         const roomInfo = {
             'Forest': { price: 180000, maxGuests: 4 },
@@ -257,8 +250,6 @@
         // =================================================================
         // INITIALIZATION & AUTHENTICATION (초기화 및 인증)
         // =================================================================
-        
-        // [수정] 페이지 로드 시 이벤트 리스너를 설정하는 로직을 DOMContentLoaded로 이동
         
         async function login() {
             const password = document.getElementById('passwordInput').value;
@@ -442,7 +433,7 @@
             container.innerHTML = filteredReservations.map(res => `
                 <div class="reservation-card">
                     <div class="reservation-header">
-                        <span style="font-weight: 600;">#${sanitizeHTML(res.id)}</span>
+                        <span style="font-weight: 600;">#${sanitizeHTML(res.id || res.bookingId)}</span>
                         <span class="status-badge status-${res.status}">${getStatusText(res.status)}</span>
                     </div>
                     <div class="reservation-body">
@@ -469,27 +460,28 @@
         
         function getActionButtons(reservation) {
             let buttons = [];
+            let reservationId = reservation.id || reservation.bookingId;
             
             if (reservation.status === 'pending' && !reservation.depositConfirmed) {
-                buttons.push(`<button class="action-btn btn-primary" onclick="confirmDeposit('${reservation.id}', ${reservation.rowIndex})">입금확인</button>`);
+                buttons.push(`<button class="action-btn btn-primary" onclick="confirmDeposit('${reservationId}', ${reservation.rowIndex})">입금확인</button>`);
             }
             if (reservation.status === 'pending' && reservation.depositConfirmed) {
-                buttons.push(`<button class="action-btn btn-success" onclick="updateReservationStatus('${reservation.id}', ${reservation.rowIndex}, 'confirmed', '예약을 확정하시겠습니까?')">예약확정</button>`);
+                buttons.push(`<button class="action-btn btn-success" onclick="updateReservationStatus('${reservationId}', ${reservation.rowIndex}, 'confirmed', '예약을 확정하시겠습니까?')">예약확정</button>`);
             }
             if (reservation.status === 'confirmed') {
                 const today = new Date().toISOString().split('T')[0];
                 if (reservation.checkIn <= today) {
-                    buttons.push(`<button class="action-btn btn-primary" onclick="updateReservationStatus('${reservation.id}', ${reservation.rowIndex}, 'checked-in', '체크인 처리하시겠습니까?')">체크인</button>`);
+                    buttons.push(`<button class="action-btn btn-primary" onclick="updateReservationStatus('${reservationId}', ${reservation.rowIndex}, 'checked-in', '체크인 처리하시겠습니까?')">체크인</button>`);
                 }
             }
             if (reservation.status === 'checked-in') {
-                buttons.push(`<button class="action-btn btn-warning" onclick="updateReservationStatus('${reservation.id}', ${reservation.rowIndex}, 'checked-out', '체크아웃 처리하시겠습니까?')">체크아웃</button>`);
+                buttons.push(`<button class="action-btn btn-warning" onclick="updateReservationStatus('${reservationId}', ${reservation.rowIndex}, 'checked-out', '체크아웃 처리하시겠습니까?')">체크아웃</button>`);
             }
             
-            buttons.push(`<button class="action-btn btn-secondary" onclick="editReservation('${reservation.id}')">수정</button>`);
+            buttons.push(`<button class="action-btn btn-secondary" onclick="editReservation('${reservationId}')">수정</button>`);
             
             if (reservation.status !== 'cancelled') {
-                buttons.push(`<button class="action-btn btn-danger" onclick="updateReservationStatus('${reservation.id}', ${reservation.rowIndex}, 'cancelled', '정말로 예약을 취소하시겠습니까?')">취소</button>`);
+                buttons.push(`<button class="action-btn btn-danger" onclick="updateReservationStatus('${reservationId}', ${reservation.rowIndex}, 'cancelled', '정말로 예약을 취소하시겠습니까?')">취소</button>`);
             }
             
             return buttons.join('');
@@ -508,7 +500,7 @@
             
             roomsContainer.innerHTML = rooms.map(room => {
                 const currentReservation = allReservations.find(res => 
-                    res.roomNumber === room.number &&
+                    res.roomName === room.type && // 객실 이름으로 매칭 (roomNumber가 없으므로)
                     res.checkIn <= today && res.checkOut > today &&
                     ['confirmed', 'checked-in'].includes(res.status)
                 );
@@ -628,7 +620,7 @@
         }
 
         function editReservation(reservationId) {
-            const reservation = allReservations.find(res => res.id === reservationId);
+            const reservation = allReservations.find(res => (res.id || res.bookingId) === reservationId);
             if (!reservation) { alert('수정할 예약 정보를 찾을 수 없습니다.'); return; }
 
             currentEditId = reservation.rowIndex;
@@ -669,7 +661,7 @@
         }
 
         // =================================================================
-        // [수정] EVENT LISTENERS
+        // EVENT LISTENERS
         // =================================================================
         document.addEventListener('DOMContentLoaded', function() {
             // 로그인 화면 이벤트
