@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초호펜션 예약 관리 시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        /* 로그인 화면 */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #2d5016 0%, #558b2f 100%);
+        }
+        
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .login-box h1 {
+            text-align: center;
+            color: #2d5016;
+            margin-bottom: 30px;
+        }
+        
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        
+        .login-button {
+            width: 100%;
+            padding: 12px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .login-button:hover {
+            background: #2ecc71;
+        }
+        
+        /* 메인 대시보드 */
+        .dashboard {
+            display: none;
+            min-height: 100vh;
+            background: #f5f5f5;
+        }
+        
+        /* 헤더 */
+        .header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            color: #2d5016;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .sync-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #27ae60;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .logout-btn {
+            padding: 8px 16px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        /* 통계 카드 */
+        .stats-container {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .stat-card h3 {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2d5016;
+        }
+        
+        .stat-card.accent-yellow { border-left: 4px solid #f39c12; }
+        .stat-card.accent-green { border-left: 4px solid #27ae60; }
+        .stat-card.accent-blue { border-left: 4px solid #3498db; }
+        .stat-card.accent-purple { border-left: 4px solid #9b59b6; }
+        
+        /* 탭 네비게이션 */
+        .tabs {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            position: sticky;
+            top: 60px;
+            z-index: 90;
+        }
+        
+        .tabs-content {
+            display: flex;
+            padding: 0 20px;
+        }
+        
+        .tab {
+            padding: 15px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .tab.active {
+            color: #27ae60;
+            border-bottom-color: #27ae60;
+            background: #f0f8f0;
+        }
+        
+        .tab-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #e74c3c;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        /* 메인 컨텐츠 */
+        .content {
+            padding: 20px;
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 예약 카드 */
+        .reservations-container {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .reservation-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid #e0e0e0;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .reservation-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .reservation-header {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .reservation-body {
+            padding: 20px;
+        }
+        
+        .customer-info {
+            margin-bottom: 15px;
+        }
+        
+        .customer-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2d5016;
+            margin-bottom: 5px;
+        }
+        
+        .customer-contact {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .reservation-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .detail-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        
+        .detail-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        
+        .detail-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-confirmed { background: #d4edda; color: #155724; }
+        .status-checkedin { background: #d1ecf1; color: #0c5460; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
+        
+        .reservation-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .btn-primary { background: #3498db; color: white; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-secondary { background: #95a5a6; color: white; }
+        
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        /* 객실 현황 */
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .room-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .room-card.occupied {
+            background: #ffe5e5;
+            border-color: #ffb3b3;
+        }
+        
+        .room-card.available {
+            background: #e5ffe5;
+            border-color: #b3ffb3;
+        }
+        
+        .room-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .room-number {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .room-type {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+        
+        .room-status {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        /* 모달 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        /* 액션 버튼 */
+        .floating-add-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            z-index: 50;
+        }
+        
+        .floating-add-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        /* 로딩 스피너 */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #27ae60;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 필터 바 */
+        .filter-bar {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+        
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .reservation-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-box {
+                width: 100%;
+            }
+            
+            .header h1 {
+                font-size: 16px;
+            }
+            
+            .sync-status {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 로그인 화면 -->
+    <div class="login-container" id="loginScreen">
+        <div class="login-box">
+            <h1>초호펜션 관리 시스템</h1>
+            <input type="password" id="passwordInput" class="login-input" placeholder="비밀번호를 입력하세요" onkeyup="handleEnterKey(event)">
+            <button onclick="login()" class="login-button">로그인</button>
+        </div>
+    </div>
+    
+    <!-- 메인 대시보드 -->
+    <div class="dashboard" id="dashboard">
+        <!-- 헤더 -->
+        <div class="header">
+            <div class="header-content">
+                <h1>초호펜션 예약 관리</h1>
+                <div class="header-actions">
+                    <div class="sync-status">
+                        <div class="sync-dot"></div>
+                        <span id="lastSync">실시간 동기화 중</span>
+                    </div>
+                    <button onclick="logout()" class="logout-btn">로그아웃</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 통계 카드 -->
+        <div class="stats-container">
+            <div class="stat-card accent-yellow">
+                <h3>전체 예약</h3>
+                <div class="stat-value" id="totalReservations">0</div>
+            </div>
+            <div class="stat-card accent-green">
+                <h3>확정 예약</h3>
+                <div class="stat-value" id="confirmedReservations">0</div>
+            </div>
+            <div class="stat-card accent-blue">
+                <h3>오늘 체크인</h3>
+                <div class="stat-value" id="todayCheckIn">0</div>
+            </div>
+            <div class="stat-card accent-purple">
+                <h3>이번달 매출</h3>
+                <div class="stat-value" id="monthlyRevenue">0원</div>
+            </div>
+        </div>
+        
+        <!-- 탭 네비게이션 -->
+        <div class="tabs">
+            <div class="tabs-content">
+                <div class="tab active" onclick="switchTab('reservations')">
+                    예약 관리
+                    <span class="tab-badge" id="pendingBadge" style="display: none;">0</span>
+                </div>
+                <div class="tab" onclick="switchTab('rooms')">객실 현황</div>
+                <div class="tab" onclick="switchTab('calendar')">캘린더</div>
+            </div>
+        </div>
+        
+        <!-- 메인 컨텐츠 -->
+        <div class="content">
+            <!-- 예약 관리 탭 -->
+            <div class="tab-content active" id="reservationsTab">
+                <div class="filter-bar">
+                    <div class="filter-item">
+                        <label>상태:</label>
+                        <select class="filter-select" id="statusFilter" onchange="filterReservations()">
+                            <option value="all">전체</option>
+                            <option value="pending">입금대기</option>
+                            <option value="confirmed">예약확정</option>
+                            <option value="checked-in">체크인</option>
+                            <option value="cancelled">취소</option>
+                        </select>
+                    </div>
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" class="search-input" id="searchInput" placeholder="고객명, 전화번호로 검색" onkeyup="filterReservations()">
+                    </div>
+                </div>
+                <div class="reservations-container" id="reservationsList">
+                    <!-- 예약 카드들이 여기에 동적으로 생성됩니다 -->
+                </div>
+            </div>
+            
+            <!-- 객실 현황 탭 -->
+            <div class="tab-content" id="roomsTab">
+                <div class="rooms-grid" id="roomsList">
+                    <!-- 객실 카드들이 여기에 동적으로 생성됩니다 -->
+                </div>
+            </div>
+            
+            <!-- 캘린더 탭 -->
+            <div class="tab-content" id="calendarTab">
+                <div style="text-align: center; padding: 50px;">
+                    <h3>캘린더 뷰는 추후 업데이트 예정입니다</h3>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 예약 추가 버튼 -->
+        <button class="floating-add-btn" onclick="showAddReservationModal()">+</button>
+    </div>
+    
+    <!-- 예약 추가/수정 모달 -->
+    <div class="modal" id="reservationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">새 예약 추가</h2>
+                <button onclick="closeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="reservationForm">
+                    <div class="form-group">
+                        <label class="form-label">고객명 *</label>
+                        <input type="text" class="form-input" id="formCustomerName" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">전화번호 *</label>
+                            <input type="tel" class="form-input" id="formPhone" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">이메일</label>
+                            <input type="email" class="form-input" id="formEmail">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">체크인 *</label>
+                            <input type="date" class="form-input" id="formCheckIn" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">체크아웃 *</label>
+                            <input type="date" class="form-input" id="formCheckOut" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">객실 타입</label>
+                            <select class="form-input" id="formRoomType">
+                                <option value="Forest">Forest</option>
+                                <option value="Forest mini">Forest mini</option>
+                                <option value="Forest 패밀리룸">Forest 패밀리룸</option>
+                                <option value="Forest mini 패밀리룸">Forest mini 패밀리룸</option>
+                                <option value="호수뷰객실">호수뷰객실</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">인원</label>
+                            <select class="form-input" id="formGuests">
+                                <option value="1">1명</option>
+                                <option value="2">2명</option>
+                                <option value="3">3명</option>
+                                <option value="4">4명</option>
+                                <option value="5">5명</option>
+                                <option value="6">6명</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">요청사항</label>
+                        <textarea class="form-input" id="formRequests" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">금액</label>
+                        <input type="number" class="form-input" id="formAmount" placeholder="자동 계산됩니다">
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="button" onclick="closeModal()" class="action-btn btn-secondary" style="flex: 1;">취소</button>
+                        <button type="button" onclick="saveReservation()" class="action-btn btn-success" style="flex: 1;">저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 로딩 오버레이 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+    
+    <script>
+        // Google Apps Script URL (배포 후 여기에 입력)
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyHk-XJvGpkqXgelv880sjL0x6w83-EPPS96SXVBpEtJWtSkKwr5IVFEYEmbo-8picS/exec';
+        const ADMIN_PASSWORD = 'chflrhf12$%'; // 실제 운영시 변경 필요
+        
+        let allReservations = [];
+        let currentEditId = null;
+        let autoRefreshInterval = null;
+        
+        // 객실 정보
+        const roomInfo = {
+            'Forest': { price: 180000, maxGuests: 4 },
+            'Forest mini': { price: 150000, maxGuests: 2 },
+            'Forest 패밀리룸': { price: 200000, maxGuests: 5 },
+            'Forest mini 패밀리룸': { price: 150000, maxGuests: 3 },
+            '호수뷰객실': { price: 150000, maxGuests: 6 }
+        };
+        
+        // 초기화
+        window.onload = function() {
+            // 로그인 상태 확인
+            if (localStorage.getItem('chohoAdmin') === 'true') {
+                showDashboard();
+            }
+        };
+        
+        // 엔터키 처리
+        function handleEnterKey(event) {
+            if (event.key === 'Enter') {
+                login();
+            }
+        }
+        
+        // 로그인
+        function login() {
+            const password = document.getElementById('passwordInput').value;
+            if (password === ADMIN_PASSWORD) {
+                localStorage.setItem('chohoAdmin', 'true');
+                showDashboard();
+            } else {
+                alert('비밀번호가 올바르지 않습니다.');
+            }
+        }
+        
+        // 로그아웃
+        function logout() {
+            localStorage.removeItem('chohoAdmin');
+            location.reload();
+        }
+        
+        // 대시보드 표시
+        function showDashboard() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            
+            // 데이터 로드 및 자동 새로고침 시작
+            loadReservations();
+            startAutoRefresh();
+        }
+        
+        // 자동 새로고침 시작 (30초마다)
+        function startAutoRefresh() {
+            autoRefreshInterval = setInterval(() => {
+                loadReservations();
+            }, 30000); // 30초
+        }
+        
+        // 로딩 표시
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+        
+        // 예약 데이터 로드
+        async function loadReservations() {
+            try {
+                showLoading();
+                const response = await fetch(`${SCRIPT_URL}?action=getReservations&password=${ADMIN_PASSWORD}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    allReservations = result.data;
+                    updateDashboard();
+                    displayReservations();
+                    updateRoomStatus();
+                    
+                    // 마지막 동기화 시간 업데이트
+                    const now = new Date();
+                    document.getElementById('lastSync').textContent = 
+                        `마지막 동기화: ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+                }
+            } catch (error) {
+                console.error('데이터 로드 실패:', error);
+                alert('데이터를 불러오는데 실패했습니다.');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 대시보드 통계 업데이트
+        async function updateDashboard() {
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getDashboardStats&password=${ADMIN_PASSWORD}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const stats = result.data;
+                    document.getElementById('totalReservations').textContent = stats.totalReservations;
+                    document.getElementById('confirmedReservations').textContent = stats.confirmedReservations;
+                    document.getElementById('todayCheckIn').textContent = stats.todayCheckIn;
+                    document.getElementById('monthlyRevenue').textContent = 
+                        stats.monthlyRevenue.toLocaleString() + '원';
+                    
+                    // 대기중 예약 배지 업데이트
+                    const pendingCount = stats.pendingReservations;
+                    const badge = document.getElementById('pendingBadge');
+                    if (pendingCount > 0) {
+                        badge.textContent = pendingCount;
+                        badge.style.display = 'block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('통계 로드 실패:', error);
+            }
+        }
+        
+        // 예약 목록 표시
+        function displayReservations() {
+            const container = document.getElementById('reservationsList');
+            const statusFilter = document.getElementById('statusFilter').value;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            const filteredReservations = allReservations.filter(res => {
+                const matchStatus = statusFilter === 'all' || res.status === statusFilter;
+                const matchSearch = res.customerName.toLowerCase().includes(searchTerm) ||
+                                   res.phone.includes(searchTerm);
+                return matchStatus && matchSearch;
+            });
+            
+            container.innerHTML = filteredReservations.map(res => `
+                <div class="reservation-card">
+                    <div class="reservation-header">
+                        <span style="font-weight: 600;">#${res.id}</span>
+                        <span class="status-badge status-${res.status}">
+                            ${getStatusText(res.status)}
+                        </span>
+                    </div>
+                    <div class="reservation-body">
+                        <div class="customer-info">
+                            <div class="customer-name">${res.customerName}</div>
+                            <div class="customer-contact">
+                                📞 ${res.phone}<br>
+                                ${res.email ? '✉️ ' + res.email : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="reservation-details">
+                            <div class="detail-item">
+                                <div class="detail-label">체크인</div>
+                                <div class="detail-value">${formatDate(res.checkIn)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">체크아웃</div>
+                                <div class="detail-value">${formatDate(res.checkOut)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">객실</div>
+                                <div class="detail-value">${res.roomName}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">인원</div>
+                                <div class="detail-value">${res.guests}명</div>
+                            </div>
+                        </div>
+                        
+                        ${res.requests ? `
+                            <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 15px;">
+                                <div style="font-size: 12px; color: #666; margin-bottom: 4px;">요청사항</div>
+                                <div style="font-size: 14px;">${res.requests}</div>
+                            </div>
+                        ` : ''}
+                        
+                        <div style="font-size: 18px; font-weight: 700; color: #27ae60; margin-bottom: 15px;">
+                            ${res.totalAmount.toLocaleString()}원
+                            ${!res.depositConfirmed && res.status === 'pending' ? 
+                                '<span style="font-size: 12px; color: #e74c3c; margin-left: 10px;">⚠️ 입금대기</span>' : ''}
+                        </div>
+                        
+                        <div class="reservation-actions">
+                            ${getActionButtons(res)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 상태 텍스트 변환
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '입금대기',
+                'confirmed': '예약확정',
+                'checked-in': '체크인',
+                'checked-out': '체크아웃',
+                'cancelled': '취소'
+            };
+            return statusMap[status] || status;
+        }
+        
+        // 날짜 포맷
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+            return `${month}/${day} (${weekday})`;
+        }
+        
+        // 액션 버튼 생성
+        function getActionButtons(reservation) {
+            let buttons = [];
+            
+            if (reservation.status === 'pending' && !reservation.depositConfirmed) {
+                buttons.push(`<button class="action-btn btn-primary" onclick="confirmDeposit('${reservation.id}', ${reservation.rowIndex})">입금확인</button>`);
+            }
+            
+            if (reservation.status === 'pending' && reservation.depositConfirmed) {
+                buttons.push(`<button class="action-btn btn-success" onclick="confirmReservation('${reservation.id}', ${reservation.rowIndex})">예약확정</button>`);
+            }
+            
+            if (reservation.status === 'confirmed') {
+                const today = new Date().toISOString().split('T')[0];
+                if (reservation.checkIn <= today) {
+                    buttons.push(`<button class="action-btn btn-primary" onclick="checkIn('${reservation.id}', ${reservation.rowIndex})">체크인</button>`);
+                }
+            }
+            
+            if (reservation.status === 'checked-in') {
+                buttons.push(`<button class="action-btn btn-warning" onclick="checkOut('${reservation.id}', ${reservation.rowIndex})">체크아웃</button>`);
+            }
+            
+            buttons.push(`<button class="action-btn btn-secondary" onclick="editReservation(${JSON.stringify(reservation).replace(/"/g, '&quot;')})">수정</button>`);
+            
+            if (reservation.status !== 'cancelled') {
+                buttons.push(`<button class="action-btn btn-danger" onclick="cancelReservation('${reservation.id}', ${reservation.rowIndex})">취소</button>`);
+            }
+            
+            return buttons.join('');
+        }
+        
+        // 입금 확인
+        async function confirmDeposit(id, rowIndex) {
+            if (!confirm('입금을 확인하셨습니까?')) return;
+            
+            try {
+                showLoading();
+                const response = await fetch(`${SCRIPT_URL}?action=updateDepositStatus&password=${ADMIN_PASSWORD}&rowIndex=${rowIndex}&confirmed=true`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('입금이 확인되었습니다.');
+                    loadReservations();
+                }
+            } catch (error) {
+                console.error('입금 확인 실패:', error);
+                alert('처리 중 오류가 발생했습니다.');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 예약 확정
+        async function confirmReservation(id, rowIndex) {
+            if (!confirm('예약을 확정하시겠습니까?')) return;
+            
+            try {
+                showLoading();
+                const updates = { status: 'confirmed' };
+                await updateReservation(rowIndex, updates);
+                alert('예약이 확정되었습니다.');
+                loadReservations();
+            } catch (error) {
+                console.error('예약 확정 실패:', error);
+                alert('처리 중 오류가 발생했습니다.');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 예약 업데이트
+        async function updateReservation(rowIndex, updates) {
+            const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'updateReservation',
+                    password: ADMIN_PASSWORD,
+                    rowIndex: rowIndex,
+                    updates: updates
+                })
+            });
+            
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error);
+            }
+            return result;
+        }
+        
+        // 체크인
+        async function checkIn(id, rowIndex) {
+            if (!confirm('체크인 처리하시겠습니까?')) return;
+            
+            try {
+                showLoading();
+                const updates = { 
+                    status: 'checked-in',
+                    checkInTime: new Date().toISOString()
+                };
+                await updateReservation(rowIndex, updates);
+                alert('체크인이 완료되었습니다.');
+                loadReservations();
+            } catch (error) {
+                console.error('체크인 실패:', error);
+                alert('처리 중 오류가 발생했습니다.');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 체크아웃
+        async function checkOut(id, rowIndex) {
+            if (!confirm('체크아웃 처리하시겠습니까?')) return;
+            
+            try {
+                showLoading();
+                const updates = { 
+                    status: 'checked-out',
+                    checkOutTime: new Date().toISOString()
+                };
+                await updateReservation(rowIndex, updates);
+                alert('체크아웃이 완료되었습니다.');
+                loadReservations();
+            } catch (error) {
+                console.error('체크아웃 실패:', error);
+                alert('처리 중 오류가 발생했습니다.');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 예약 취소
+        async function cancelReservation(id, rowIndex) {
+            if (!confirm('예약을 취소하시겠습니까?')) return;
+            
+            try {
+                showLoading();
+                const updates = { status: 'cancelled' };
+                await updateReservation(rowIndex, updates);
+                alert('예약이 취소되었습니다.');
+                loadReservations();
+            } catch (error) {
+                console.error('예약 취소 실패:', error);
+                alert('처리 중 오류가 발생했습니다.');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 탭 전환
+        function switchTab(tabName) {
+            // 모든 탭과 컨텐츠 비활성화
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // 선택된 탭 활성화
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+        
+        // 필터링
+        function filterReservations() {
+            displayReservations();
+        }
+        
+        // 예약 추가 모달
+        function showAddReservationModal() {
+            currentEditId = null;
+            document.getElementById('modalTitle').textContent = '새 예약 추가';
+            document.getElementById('reservationForm').reset();
+            document.getElementById('reservationModal').classList.add('active');
+            
+            // 오늘 날짜를 기본값으로 설정
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('formCheckIn').min = today;
+            document.getElementById('formCheckOut').min = today;
+        }
+        
+        // 예약 수정
+        function editReservation(reservation) {
+            currentEditId = reservation.rowIndex;
+            document.getElementById('modalTitle').textContent = '예약 정보 수정';
+            
+            // 폼에 데이터 채우기
+            document.getElementById('formCustomerName').value = reservation.customerName;
+            document.getElementById('formPhone').value = reservation.phone;
+            document.getElementById('formEmail').value = reservation.email || '';
+            document.getElementById('formCheckIn').value = reservation.checkIn;
+            document.getElementById('formCheckOut').value = reservation.checkOut;
+            document.getElementById('formRoomType').value = reservation.roomName;
+            document.getElementById('formGuests').value = reservation.guests;
+            document.getElementById('formRequests').value = reservation.requests || '';
+            document.getElementById('formAmount').value = reservation.totalAmount;
+            
+            document.getElementById('reservationModal').classList.add('active');
+        }
+        
+        // 모달 닫기
+        function closeModal() {
+            document.getElementById('reservationModal').classList.remove('active');
+            currentEditId = null;
+        }
+        
+        // 예약 저장
+        async function saveReservation() {
+            const formData = {
+                customerName: document.getElementById('formCustomerName').value,
+                phone: document.getElementById('formPhone').value,
+                email: document.getElementById('formEmail').value,
+                checkIn: document.getElementById('formCheckIn').value,
+                checkOut: document.getElementById('formCheckOut').value,
+                roomName: document.getElementById('formRoomType').value,
+                guests: parseInt(document.getElementById('formGuests').value),
+                requests: document.getElementById('formRequests').value,
+                totalAmount: parseInt(document.getElementById('formAmount').value) || calculateAmount()
+            };
+            
+            if (!formData.customerName || !formData.phone || !formData.checkIn || !formData.checkOut) {
+                alert('필수 항목을 모두 입력해주세요.');
+                return;
+            }
+            
+            try {
+                showLoading();
+                
+                if (currentEditId) {
+                    // 수정
+                    await updateReservation(currentEditId, formData);
+                    alert('예약이 수정되었습니다.');
+                } else {
+                    // 추가
+                    formData.status = 'confirmed';
+                    formData.depositConfirmed = true;
+                    
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'addReservation',
+                            password: ADMIN_PASSWORD,
+                            ...formData
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('예약이 추가되었습니다.');
+                    } else {
+                        throw new Error(result.error);
+                    }
+                }
+                
+                closeModal();
+                loadReservations();
+            } catch (error) {
+                console.error('예약 저장 실패:', error);
+                alert('처리 중 오류가 발생했습니다.');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // 금액 자동 계산
+        function calculateAmount() {
+            const checkIn = new Date(document.getElementById('formCheckIn').value);
+            const checkOut = new Date(document.getElementById('formCheckOut').value);
+            const roomType = document.getElementById('formRoomType').value;
+            
+            if (checkIn && checkOut && roomType) {
+                const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+                const roomPrice = roomInfo[roomType]?.price || 0;
+                return roomPrice * nights;
+            }
+            return 0;
+        }
+        
+        // 객실 현황 업데이트
+        function updateRoomStatus() {
+            const today = new Date().toISOString().split('T')[0];
+            const roomsContainer = document.getElementById('roomsList');
+            
+            const rooms = [
+                { number: 'Forest-01', type: 'Forest', maxGuests: 4 },
+                { number: 'Forest-Mini-01', type: 'Forest mini', maxGuests: 2 },
+                { number: 'Forest-Family-01', type: 'Forest 패밀리룸', maxGuests: 5 },
+                { number: 'Forest-Mini-Family-01', type: 'Forest mini 패밀리룸', maxGuests: 3 },
+                { number: 'Lakeview-01', type: '호수뷰객실', maxGuests: 6 }
+            ];
+            
+            roomsContainer.innerHTML = rooms.map(room => {
+                // 오늘 날짜에 해당 객실에 투숙중인 예약 찾기
+                const currentReservation = allReservations.find(res => 
+                    res.roomNumber === room.number &&
+                    res.checkIn <= today &&
+                    res.checkOut > today &&
+                    (res.status === 'confirmed' || res.status === 'checked-in')
+                );
+                
+                const isOccupied = !!currentReservation;
+                
+                return `
+                    <div class="room-card ${isOccupied ? 'occupied' : 'available'}">
+                        <div class="room-number">${room.number}</div>
+                        <div class="room-type">${room.type}</div>
+                        <div class="room-status" style="color: ${isOccupied ? '#e74c3c' : '#27ae60'}">
+                            ${isOccupied ? '🏠 투숙중' : '✅ 공실'}
+                        </div>
+                        ${currentReservation ? `
+                            <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                                <div>${currentReservation.customerName}</div>
+                                <div>${formatDate(currentReservation.checkOut)}까지</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 날짜 입력시 자동 금액 계산
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkInInput = document.getElementById('formCheckIn');
+            const checkOutInput = document.getElementById('formCheckOut');
+            const roomTypeSelect = document.getElementById('formRoomType');
+            const amountInput = document.getElementById('formAmount');
+            
+            function updateAmount() {
+                const amount = calculateAmount();
+                if (amount > 0) {
+                    amountInput.value = amount;
+                }
+            }
+            
+            checkInInput.addEventListener('change', updateAmount);
+            checkOutInput.addEventListener('change', updateAmount);
+            roomTypeSelect.addEventListener('change', updateAmount);
+        });
