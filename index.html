@@ -2,27 +2,39 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CORS 연결 테스트 페이지</title>
+    <title>CORS 연결 최종 테스트</title>
     <style>
         body { font-family: sans-serif; text-align: center; padding-top: 50px; }
         button { font-size: 20px; padding: 10px 20px; cursor: pointer; }
         #result { margin-top: 20px; font-weight: bold; }
+        #instructions { margin-top: 30px; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto; background: #f0f0f0; padding: 20px; border-radius: 8px;}
     </style>
 </head>
 <body>
-    <h1>Google Apps Script CORS 연결 테스트</h1>
-    <p>아래 버튼을 누르고 결과를 확인하세요.</p>
+    <h1>Google Apps Script CORS 연결 최종 테스트</h1>
     <p>(F12를 눌러 개발자 콘솔을 함께 확인하세요)</p>
     <button id="testButton">연결 테스트 시작</button>
     <div id="result"></div>
 
+    <div id="instructions">
+        <h3>테스트 결과 안내</h3>
+        <ul>
+            <li><strong>"🎉🎉🎉 연결 성공!" 알림창이 뜬 경우:</strong><br>
+                CORS 문제가 완전히 해결되었습니다. 이제 제가 마지막으로 드렸던 원래의 관리자 페이지용 <code>index.html</code>과 <code>Code.gs</code> 코드로 복구하고, <strong>반드시 '새 버전'으로 재배포</strong>하면 100% 작동합니다.</li>
+            <li><strong>"❌ 실패!" 메시지가 뜨는 경우:</strong><br>
+                Apps Script 배포 설정(액세스 권한: 모든 사용자)을 다시 확인해야 합니다. 코드 문제가 아닙니다.</li>
+        </ul>
+    </div>
+
     <script>
+        // 최종 테스트용 웹 앱 URL
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzrUBCX_2__GsOhwpx-IKpgIjMC2pswg3fCEA3dO7aHGP0nVKVN2hSjxZpjxNnLNTel/exec';
         const resultDiv = document.getElementById('result');
 
         document.getElementById('testButton').addEventListener('click', () => {
             resultDiv.textContent = '요청 보내는 중...';
             resultDiv.style.color = 'black';
+            console.log(`요청 시작: ${SCRIPT_URL}`);
 
             fetch(SCRIPT_URL, {
                 method: 'POST',
@@ -31,6 +43,7 @@
                 body: JSON.stringify({ test: 'ping' })
             })
             .then(response => {
+                console.log('서버로부터 응답을 받았습니다. 상태 코드:', response.status);
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
