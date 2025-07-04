@@ -2,66 +2,51 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CORS 연결 최종 테스트</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초호펜션 예약 관리 시스템</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
-        button { font-size: 20px; padding: 10px 20px; cursor: pointer; }
-        #result { margin-top: 20px; font-weight: bold; }
-        #instructions { margin-top: 30px; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto; background: #f0f0f0; padding: 20px; border-radius: 8px;}
+        /* CSS는 변경 없습니다. */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f5f5f5; color: #333; }
+        /* ... (이하 모든 CSS 코드는 동일하므로 생략) ... */
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #666; }
+        @media (max-width: 768px) {
+            .stats-container { grid-template-columns: 1fr; }
+            .reservation-details { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .filter-bar { flex-direction: column; align-items: stretch; }
+            .search-box { width: 100%; }
+            .header h1 { font-size: 16px; }
+            .sync-status { display: none; }
+        }
     </style>
 </head>
 <body>
-    <h1>Google Apps Script CORS 연결 최종 테스트</h1>
-    <p>(F12를 눌러 개발자 콘솔을 함께 확인하세요)</p>
-    <button id="testButton">연결 테스트 시작</button>
-    <div id="result"></div>
-
-    <div id="instructions">
-        <h3>테스트 결과 안내</h3>
-        <ul>
-            <li><strong>"🎉🎉🎉 연결 성공!" 알림창이 뜬 경우:</strong><br>
-                CORS 문제가 완전히 해결되었습니다. 이제 제가 마지막으로 드렸던 원래의 관리자 페이지용 <code>index.html</code>과 <code>Code.gs</code> 코드로 복구하고, <strong>반드시 '새 버전'으로 재배포</strong>하면 100% 작동합니다.</li>
-            <li><strong>"❌ 실패!" 메시지가 뜨는 경우:</strong><br>
-                Apps Script 배포 설정(액세스 권한: 모든 사용자)을 다시 확인해야 합니다. 코드 문제가 아닙니다.</li>
-        </ul>
+    <!-- 로그인 화면 -->
+    <div class="login-container" id="loginScreen">
+        <div class="login-box">
+            <h1>초호펜션 관리 시스템</h1>
+            <input type="password" id="passwordInput" class="login-input" placeholder="비밀번호를 입력하세요">
+            <button id="loginButton" class="login-button">로그인</button>
+        </div>
     </div>
+    
+    <!-- ... (이하 모든 HTML 코드는 동일하므로 생략) ... -->
 
     <script>
-        // 최종 테스트용 웹 앱 URL
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzrUBCX_2__GsOhwpx-IKpgIjMC2pswg3fCEA3dO7aHGP0nVKVN2hSjxZpjxNnLNTel/exec';
-        const resultDiv = document.getElementById('result');
+        // =================================================================
+        // CONFIGURATION (설정)
+        // =================================================================
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx02O9jIB05tv2cbYzbw-pzeZk1mZJ7GaMZJ8m9vMnjo0baFV4-RHxI47O1ukB6Lfv3/exec';
 
-        document.getElementById('testButton').addEventListener('click', () => {
-            resultDiv.textContent = '요청 보내는 중...';
-            resultDiv.style.color = 'black';
-            console.log(`요청 시작: ${SCRIPT_URL}`);
-
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                mode: 'cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ test: 'ping' })
-            })
-            .then(response => {
-                console.log('서버로부터 응답을 받았습니다. 상태 코드:', response.status);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('✅ 성공! 서버 응답:', data);
-                resultDiv.textContent = `✅ 성공! 서버 메시지: ${data.message}`;
-                resultDiv.style.color = 'green';
-                alert('🎉🎉🎉 연결 성공! 드디어 CORS 문제가 해결되었습니다!');
-            })
-            .catch(error => {
-                console.error('❌ 실패! 에러:', error);
-                resultDiv.textContent = `❌ 실패! 콘솔을 확인하세요: ${error.message}`;
-                resultDiv.style.color = 'red';
-                alert('...아직 실패입니다. 콘솔의 에러 메시지를 다시 확인해주세요.');
-            });
-        });
+        // ... (이하 모든 JavaScript 코드는 동일하므로 생략) ...
+        
+        // 초기 로그인 상태 확인
+        if (sessionStorage.getItem('chohoAdminToken')) {
+            sessionPassword = sessionStorage.getItem('chohoAdminToken');
+            showDashboard();
+        }
+    });
     </script>
 </body>
 </html>
