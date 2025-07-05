@@ -275,8 +275,11 @@
                         console.error('API Error:', data.error);
                         reject(new Error(data.error || '알 수 없는 서버 오류'));
                     }
-                    delete window[callbackName];
-                    document.body.removeChild(script);
+                    // 스크립트 태그와 콜백 함수 정리
+                    try {
+                        delete window[callbackName];
+                        document.body.removeChild(script);
+                    } catch (e) { /* 이미 삭제되었을 수 있음 */ }
                 };
 
                 const script = document.createElement('script');
@@ -284,14 +287,15 @@
                 
                 script.onerror = () => {
                     reject(new Error('Script loading failed. Check network or server response.'));
-                    delete window[callbackName];
-                    document.body.removeChild(script);
+                     try {
+                        delete window[callbackName];
+                        document.body.removeChild(script);
+                    } catch (e) { /* 이미 삭제되었을 수 있음 */ }
                 };
                 
                 document.body.appendChild(script);
             });
         }
-
 
         // =================================================================
         // AUTHENTICATION
@@ -306,14 +310,9 @@
             
             showLoading();
             try {
-                // 로그인은 비밀번호만 보내므로 JSONP로 간단하게 처리
-                const response = await new Promise((resolve, reject) => {
-                     const callbackName = 'loginCallback';
-                     window[callbackName] = (data) => resolve(data);
-                     const script = document.createElement('script');
-                     script.src = `${SCRIPT_URL}?action=checkPassword&password=${encodeURIComponent(password)}&callback=${callbackName}`;
-                     script.onerror = () => reject(new Error('Login script failed to load.'));
-                     document.head.appendChild(script);
+                const response = await apiRequest({
+                    action: 'checkPassword',
+                    password: password // apiRequest가 비밀번호를 추가하므로 사실 중복이지만, 명확성을 위해 둠
                 });
 
                 if (response.success) {
@@ -325,7 +324,7 @@
                 }
             } catch(error) {
                 console.error('Login error:', error);
-                alert('로그인 중 오류가 발생했습니다. 서버 상태를 확인해주세요.');
+                alert(`로그인 중 오류가 발생했습니다: ${error.message}`);
             } finally {
                 hideLoading();
             }
@@ -375,7 +374,7 @@
                 'checked-out': '체크아웃',
                 'cancelled': '취소'
             };
-            return statusMap[status] || status;
+            return statusMap[status] || '알 수 없음';
         }
 
         // =================================================================
@@ -447,7 +446,7 @@
             container.innerHTML = filteredReservations.map(res => `
                 <div class="reservation-card">
                     <div class="reservation-header">
-                        <span style="font-weight: 600;">#${sanitizeHTML(res.id || res.bookingId)}</span>
+                        <span style="font-weight: 600;">#${sanitizeHTML(res.bookingId || res.id)}</span>
                         <span class="status-badge status-${res.status}">${getStatusText(res.status)}</span>
                     </div>
                     <div class="reservation-body">
@@ -474,7 +473,7 @@
         
         function getActionButtons(reservation) {
             let buttons = [];
-            let reservationId = reservation.id || reservation.bookingId;
+            let reservationId = reservation.bookingId || reservation.id;
             
             if (reservation.status === 'pending' && !reservation.depositConfirmed) {
                 buttons.push(`<button class="action-btn btn-primary" onclick="confirmDeposit('${reservationId}', ${reservation.rowIndex})">입금확인</button>`);
@@ -623,7 +622,7 @@
         }
 
         function editReservation(reservationId) {
-            const reservation = allReservations.find(res => (res.id || res.bookingId) === reservationId);
+            const reservation = allReservations.find(res => (res.bookingId || res.id) === reservationId);
             if (!reservation) { alert('수정할 예약 정보를 찾을 수 없습니다.'); return; }
 
             currentEditId = reservation.rowIndex;
