@@ -2,252 +2,69 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>초호펜션 예약 관리 시스템 v3.0</title>
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
-    <style>
-        :root {
-            --primary-color: #2d5016; --secondary-color: #558b2f; --accent-green: #27ae60;
-            --light-gray: #f5f5f5; --dark-text: #333; --light-text: #666;
-        }
-        /* ... (기존 CSS와 거의 동일, 타임라인용 CSS 추가) ... */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--light-gray); color: var(--dark-text); }
-        .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); }
-        .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }
-        .login-box h1 { text-align: center; color: var(--primary-color); margin-bottom: 30px; }
-        .login-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; font-size: 16px; }
-        .login-button { width: 100%; padding: 12px; background: var(--accent-green); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
-        .login-button:hover { background: #2ecc71; }
-        .dashboard { display: none; min-height: 100vh; background: var(--light-gray); }
-        .header { background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        .header-content { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { font-size: 20px; color: var(--primary-color); }
-        .header-actions { display: flex; gap: 10px; align-items: center; }
-        .sync-btn { padding: 8px 12px; background: var(--accent-green); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 5px; }
-        .sync-btn.loading .text { display: none; }
-        .sync-btn .spinner-icon { display: none; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.5); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
-        .sync-btn.loading .spinner-icon { display: inline-block; }
-        .logout-btn { padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
-        .tabs { background: white; border-bottom: 1px solid #e0e0e0; position: sticky; top: 60px; z-index: 90; }
-        .tabs-content { display: flex; padding: 0 20px; overflow-x: auto;}
-        .tab { padding: 15px 20px; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; position: relative; white-space: nowrap; }
-        .tab.active { color: var(--accent-green); border-bottom-color: var(--accent-green); background: #f0f8f0; }
-        .content { padding: 20px; }
-        .tab-content { display: none; animation: fadeIn 0.3s ease-in; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* 타임라인 대시보드 CSS */
-        .timeline-dashboard { display: flex; flex-direction: column; gap: 10px; }
-        .timeline-row { display: flex; border-radius: 8px; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
-        .room-name-cell { flex-shrink: 0; width: 120px; padding: 15px; font-weight: 600; background: #f8f9fa; border-right: 1px solid #e9ecef; display: flex; align-items: center; justify-content: center; text-align: center; }
-        .days-container { display: grid; grid-template-columns: repeat(7, 1fr); flex-grow: 1; }
-        .day-cell { position: relative; border-left: 1px dotted #e9ecef; padding: 5px; min-height: 80px; }
-        .day-header { text-align: center; font-size: 12px; color: var(--light-text); padding-bottom: 5px; border-bottom: 1px solid #e9ecef; }
-        .day-date { font-weight: 600; color: var(--dark-text); }
-        .day-cell.is-today .day-header { color: var(--accent-green); font-weight: bold; }
-        .timeline-reservation { position: absolute; top: 40px; left: 0; height: 35px; background-color: var(--secondary-color); color: white; border-radius: 4px; padding: 5px; font-size: 12px; display: flex; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; z-index: 10; transition: all 0.2s; }
-        .timeline-reservation:hover { transform: scale(1.02); box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 11; }
-        .timeline-reservation.status-confirmed { background-color: var(--accent-green); }
-        .timeline-reservation.status-checked-in { background-color: #3498db; }
-        .timeline-reservation.status-pending { background-color: #f39c12; }
-        
-        #calendar { background: white; padding: 20px; border-radius: 12px; }
-        .no-reservations { text-align: center; padding: 50px; background: white; border-radius: 12px; color: var(--light-text); }
-        .floating-add-btn { position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px; background: var(--accent-green); color: white; border: none; border-radius: 50%; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s; z-index: 50; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* ... (나머지 CSS는 이전과 동일) ... */
-        .modal-content, .loading-overlay { /* 생략 */ }
-        @media (max-width: 768px) {
-            .room-name-cell { width: 80px; font-size: 12px; padding: 5px; }
-            .day-header { font-size: 10px; }
-            .timeline-reservation { font-size: 10px; height: 25px; top: 35px; }
-        }
-    </style>
+    <title>관리자 페이지 (POST 복귀 테스트)</title>
 </head>
 <body>
-    <!-- 로그인 화면 -->
-    <div class="login-container" id="loginScreen">
-        <div class="login-box"><h1>초호펜션 관리 시스템</h1><input type="password" id="passwordInput" class="login-input" placeholder="비밀번호를 입력하세요"><button id="loginButton" class="login-button">로그인</button></div>
+    <h1>관리자 페이지 (POST 복귀 테스트)</h1>
+    <div id="loginScreen">
+        <input type="password" id="passwordInput" placeholder="비밀번호">
+        <button id="loginButton">로그인</button>
     </div>
-    
-    <!-- 메인 대시보드 -->
-    <div class="dashboard" id="dashboard">
-        <div class="header">
-            <div class="header-content">
-                <h1>초호펜션 예약 관리</h1>
-                <div class="header-actions">
-                    <button id="syncButton" class="sync-btn"><span class="text">🔄 새로고침</span><span class="spinner-icon"></span></button>
-                    <button id="logoutButton" class="logout-btn">로그아웃</button>
-                </div>
-            </div>
-        </div>
-        <div class="tabs">
-            <div class="tabs-content">
-                <div class="tab active" data-tab="timeline">타임라인 대시보드</div>
-                <div class="tab" data-tab="calendar">전체 캘린더</div>
-            </div>
-        </div>
-        <div class="content">
-            <div class="tab-content active" id="timelineTab"><div id="timelineDashboard" class="timeline-dashboard"></div></div>
-            <div class="tab-content" id="calendarTab"><div id="calendar"></div></div>
-        </div>
-        <button id="addReservationButton" class="floating-add-btn">+</button>
+    <div id="dashboard" style="display:none;">
+        <h2>예약 목록</h2>
+        <button id="syncButton">새로고침</button>
+        <pre id="reservationsList"></pre>
     </div>
-    
-    <!-- 예약 추가/수정 모달 (이전과 동일) -->
-    <div class="modal" id="reservationModal"><!-- ... 모달 내용 생략 ... --></div>
-    <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
     
     <script>
-        // --- CONFIGURATION ---
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw9Fav0VorRG1ukk1StToVuBoHrPvVw_sqUGZacSuBimPbbI3f54O5in00Y6-Z91AEhtQ/exec';
-        const roomData = { /* 이전과 동일 */ };
-        const BBQ_PRICE = 30000;
-
-        // --- GLOBAL VARIABLES ---
-        let allReservations = [];
-        let currentEditData = null; 
         let sessionPassword = null;
-        let calendar = null;
-        let isCalendarRendered = false;
 
-        // --- API COMMUNICATION (JSONP) ---
-        function apiRequest(params) { /* 이전과 동일 */ }
+        async function apiRequest(payload) {
+            const password = payload.action === 'checkPassword' ? payload.password : sessionPassword;
+            if (!password) {
+                alert('인증 정보가 없습니다.');
+                throw new Error('No session password');
+            }
 
-        // --- AUTHENTICATION ---
-        async function login() { /* 이전과 동일 */ }
-        function logout() { /* 이전과 동일 */ }
-        function showDashboard() { document.getElementById('loginScreen').style.display = 'none'; document.getElementById('dashboard').style.display = 'block'; loadInitialData(); }
-        
-        // --- UTILITY ---
-        function sanitizeHTML(str) { /* 이전과 동일 */ }
-        function showLoading() { document.getElementById('loadingOverlay').classList.add('active'); }
-        function hideLoading() { document.getElementById('loadingOverlay').classList.remove('active'); }
-        function formatDate(d) { if (!d) return ''; if (!(d instanceof Date)) d = new Date(d); return `${d.getMonth() + 1}/${d.getDate()}(${['일','월','화','수','목','금','토'][d.getDay()]})`;}
-        function getStatusText(s) { /* 이전과 동일 */ }
-        
-        // --- DATA HANDLING & UI ---
-        async function loadInitialData() {
-            const syncBtn = document.getElementById('syncButton');
-            syncBtn.classList.add('loading');
-            showLoading();
+            const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...payload, password: password })
+            });
+
+            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+            const result = await response.json();
+            if (!result.success) throw new Error(result.error || '알 수 없는 에러');
+            return result;
+        }
+
+        async function login() {
+            const password = document.getElementById('passwordInput').value;
+            try {
+                await apiRequest({ action: 'checkPassword', password: password });
+                sessionPassword = password;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+                loadReservations();
+            } catch (error) {
+                alert(`로그인 실패: ${error.message}`);
+            }
+        }
+
+        async function loadReservations() {
             try {
                 const result = await apiRequest({ action: 'getReservations' });
-                if (result.success) {
-                    allReservations = result.data;
-                    renderTimelineDashboard(); 
-                    if (isCalendarRendered) renderCalendar();
-                }
+                document.getElementById('reservationsList').textContent = JSON.stringify(result.data, null, 2);
+                alert('데이터를 성공적으로 불러왔습니다.');
             } catch (error) {
-                alert(`데이터를 불러오는 데 실패했습니다: ${error.message}`);
-            } finally {
-                hideLoading();
-                syncBtn.classList.remove('loading');
+                alert(`데이터 로딩 실패: ${error.message}`);
             }
         }
-        
-        // [신규] 타임라인 대시보드 렌더링 함수
-        function renderTimelineDashboard() {
-            const container = document.getElementById('timelineDashboard');
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
 
-            let headerHtml = '<div class="timeline-row"><div class="room-name-cell">객실</div><div class="days-container">';
-            for (let i = 0; i < 7; i++) {
-                const date = new Date(today);
-                date.setDate(today.getDate() + i);
-                const isTodayClass = i === 0 ? 'is-today' : '';
-                headerHtml += `<div class="day-cell ${isTodayClass}"><div class="day-header"><div class="day-date">${date.getDate()}일</div><div>${['일','월','화','수','목','금','토'][date.getDay()]}</div></div></div>`;
-            }
-            headerHtml += '</div></div>';
-
-            const rooms = Object.keys(roomData);
-            let bodyHtml = rooms.map(roomName => {
-                let rowHtml = `<div class="timeline-row"><div class="room-name-cell">${roomName}</div><div class="days-container">`;
-                
-                const reservationsForRoom = allReservations.filter(r => r['객실명'] === roomName && (r.status || 'pending') !== 'cancelled');
-                
-                for (let i = 0; i < 7; i++) {
-                    const currentDate = new Date(today);
-                    currentDate.setDate(today.getDate() + i);
-                    const currentDateStr = currentDate.toISOString().split('T')[0];
-
-                    rowHtml += `<div class="day-cell">`;
-                    
-                    reservationsForRoom.forEach(res => {
-                        const checkInStr = new Date(res['체크인']).toISOString().split('T')[0];
-                        if (checkInStr === currentDateStr) {
-                            const checkInDate = new Date(res['체크인']);
-                            const checkOutDate = new Date(res['체크아웃']);
-                            const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-                            const width = `calc(${nights * 100}% - 2px)`; // 2px for border
-                            const status = res.status || 'pending';
-                            rowHtml += `<div class="timeline-reservation status-${status}" style="width: ${width};" onclick="editReservation('${res['예약번호']}')" title="${res['고객명']} / ${res['인원']}명">
-                                ${res['고객명']}
-                            </div>`;
-                        }
-                    });
-                    rowHtml += `</div>`;
-                }
-                rowHtml += '</div></div>';
-                return rowHtml;
-            }).join('');
-            
-            container.innerHTML = headerHtml + bodyHtml;
-        }
-
-        // [수정] 캘린더 렌더링 함수
-        function renderCalendar() {
-            const calendarEl = document.getElementById('calendar');
-            if (!calendarEl) return;
-            const events = allReservations.filter(r => (r.status || 'pending') !== 'cancelled').map(r => {
-                const status = r.status || 'pending';
-                return {
-                    title: `${r['객실명']} - ${r['고객명']}`, start: r['체크인'], end: r['체크아웃'],
-                    extendedProps: { reservation: r },
-                    backgroundColor: {'confirmed':'#27ae60', 'checked-in':'#3498db', 'pending':'#f39c12'}[status],
-                    borderColor: {'confirmed':'#27ae60', 'checked-in':'#3498db', 'pending':'#f39c12'}[status]
-                }
-            });
-            if (calendar) { calendar.destroy(); }
-            calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth', locale: 'ko',
-                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
-                events: events, eventClick: (info) => editReservation(info.event.extendedProps.reservation['예약번호'])
-            });
-            calendar.render();
-            isCalendarRendered = true;
-        }
-
-        // --- ACTIONS & MODAL ---
-        async function updateReservationAction(rowIndex, updates, successMsg) { /* 이전과 동일 */ }
-        function showAddReservationModal() { /* 이전과 동일 */ }
-        function editReservation(id) { /* 이전과 동일 */ }
-        function closeModal() { /* 이전과 동일 */ }
-        async function saveReservation() { /* 이전과 동일 */ }
-        function updatePriceSummary() { /* 이전과 동일 */ }
-        function populateGuestOptions(roomName) { /* 이전과 동일 */ }
-        
-        // --- EVENT LISTENERS ---
-        document.addEventListener('DOMContentLoaded', function() {
-            // [수정] 동기화 버튼 이벤트 추가
-            document.getElementById('syncButton').addEventListener('click', loadInitialData);
-            document.getElementById('loginButton').addEventListener('click', login);
-            // ... (나머지 이벤트 리스너는 이전과 동일)
-            
-            document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', e => {
-                document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
-                const tabName = e.currentTarget.dataset.tab;
-                e.currentTarget.classList.add('active');
-                document.getElementById(tabName + 'Tab').classList.add('active');
-                if (tabName === 'calendar' && !isCalendarRendered) renderCalendar();
-            }));
-             // ... (나머지 이벤트 리스너는 이전과 동일)
-            if (sessionStorage.getItem('chohoAdminToken')) { sessionPassword = sessionStorage.getItem('chohoAdminToken'); showDashboard(); }
-        });
+        document.getElementById('loginButton').addEventListener('click', login);
+        document.getElementById('syncButton').addEventListener('click', loadReservations);
     </script>
 </body>
 </html>
