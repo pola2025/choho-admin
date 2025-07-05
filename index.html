@@ -251,26 +251,36 @@
         }
 
         // --- AUTHENTICATION ---
-        async function login() {
-            const password = document.getElementById('passwordInput').value;
-            if (!password) { alert('비밀번호를 입력하세요.'); return; }
-            showLoading();
-            try {
-                const response = await new Promise((resolve, reject) => {
-                    const callbackName = 'loginCallback_' + Date.now();
-                    window[callbackName] = (data) => { resolve(data); delete window[callbackName]; try { document.body.removeChild(script); } catch(e){} };
-                    const script = document.createElement('script');
-                    script.src = `${SCRIPT_URL}?action=checkPassword&password=${encodeURIComponent(password)}&callback=${callbackName}`;
-                    script.onerror = () => { reject(new Error('Login script failed to load.')); delete window[callbackName]; };
-                    document.body.appendChild(script);
-                });
-                if (response.success) {
-                    sessionPassword = password;
-                    sessionStorage.setItem('chohoAdminToken', password);
-                    showDashboard();
-                } else { alert('비밀번호가 올바르지 않습니다.'); }
-            } catch(error) { alert(`로그인 중 오류가 발생했습니다: ${error.message}`); } finally { hideLoading(); }
-        }
+                async function login() {
+                const password = document.getElementById('passwordInput').value;
+                if (!password) {
+                    alert('비밀번호를 입력하세요.');
+                    return;
+                }
+                
+                showLoading();
+                try {
+                    // [수정] 모든 요청을 일관되게 apiRequest를 사용하도록 변경
+                    const response = await apiRequest({
+                        action: 'checkPassword',
+                        password: password // apiRequest 함수 내부에서 자동으로 sessionPassword 대신 이 값을 사용합니다.
+                    });
+
+                    if (response.success) {
+                        sessionPassword = password;
+                        sessionStorage.setItem('chohoAdminToken', password);
+                        showDashboard();
+                    } else {
+                        // 서버에서 보내는 에러 메시지가 있다면 표시, 없다면 기본 메시지
+                        alert(response.error || '비밀번호가 올바르지 않습니다.');
+                    }
+                } catch(error) {
+                    console.error('Login error:', error);
+                    alert(`로그인 중 오류가 발생했습니다: ${error.message}`);
+                } finally {
+                    hideLoading();
+                }
+            }
         function logout() { sessionPassword = null; sessionStorage.removeItem('chohoAdminToken'); location.reload(); }
         function showDashboard() { document.getElementById('loginScreen').style.display = 'none'; document.getElementById('dashboard').style.display = 'block'; loadInitialData(); startAutoRefresh(); }
         
