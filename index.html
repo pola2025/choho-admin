@@ -1,1 +1,68 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw9Fav0VorRG1ukk1StToVuBoHrPvVw_sqUGZacSuBimPbbI3f54O5in00Y6-Z91AEhtQ/exec';
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>CORS 연결 최종 테스트</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
+        button { font-size: 20px; padding: 10px 20px; cursor: pointer; }
+        #result { margin-top: 20px; font-weight: bold; font-size: 18px; }
+        #instructions { margin-top: 30px; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto; background: #f0f0f0; padding: 20px; border-radius: 8px;}
+    </style>
+</head>
+<body>
+    <h1>Google Apps Script CORS 연결 최종 테스트</h1>
+    <p>아래 버튼을 누르고 결과를 확인하세요.</p>
+    <p>(F12를 눌러 개발자 콘솔을 함께 확인하세요)</p>
+    <button id="testButton">연결 테스트 시작</button>
+    <div id="result"></div>
+
+    <div id="instructions">
+        <h3>테스트 결과 안내</h3>
+        <ul>
+            <li><strong>"🎉🎉🎉 연결 성공!" 알림창이 뜬 경우:</strong><br>
+                CORS 문제가 완전히 해결되었습니다! 이제 이 성공한 프로젝트에 원래의 관리자 기능을 덮어씌우고, <code>index.html</code>도 원래 코드로 되돌리면 100% 작동합니다.</li>
+            <li><strong>"❌ 실패!" 메시지가 뜨는 경우:</strong><br>
+                Apps Script 배포 설정(액세스 권한: 모든 사용자)을 다시 확인해야 합니다. 코드 문제가 아닙니다.</li>
+        </ul>
+    </div>
+
+    <script>
+        // 최종 테스트용 웹 앱 URL
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw9Fav0VorRG1ukk1StToVuBoHrPvVw_sqUGZacSuBimPbbI3f54O5in00Y6-Z91AEhtQ/exec';
+        const resultDiv = document.getElementById('result');
+
+        document.getElementById('testButton').addEventListener('click', () => {
+            resultDiv.textContent = '요청 보내는 중...';
+            resultDiv.style.color = 'black';
+            console.log(`요청 시작: ${SCRIPT_URL}`);
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ test: 'ping' })
+            })
+            .then(response => {
+                console.log('서버로부터 응답을 받았습니다. 상태 코드:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP 에러! 상태 코드: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('✅ 성공! 서버 응답:', data);
+                resultDiv.textContent = `✅ 성공! 서버 메시지: ${data.message}`;
+                resultDiv.style.color = 'green';
+                alert('🎉🎉🎉 연결 성공! 드디어 CORS 문제가 해결되었습니다!');
+            })
+            .catch(error => {
+                console.error('❌ 실패! 에러:', error);
+                resultDiv.textContent = `❌ 실패! 콘솔을 확인하세요: ${error.message}`;
+                resultDiv.style.color = 'red';
+                alert('...아직 실패입니다. 콘솔의 에러 메시지를 다시 확인해주세요.');
+            });
+        });
+    </script>
+</body>
+</html>
