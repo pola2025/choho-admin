@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>초호펜션 예약 관리 시스템 v2.0</title>
+    <title>초호펜션 예약 관리 시스템 v2.2</title>
     <!-- FullCalendar 라이브러리 추가 -->
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
     <style>
+        /* CSS는 변경 없습니다. 이전과 동일합니다. */
         :root {
             --primary-color: #2d5016;
             --secondary-color: #558b2f;
@@ -180,7 +181,7 @@
                 <form id="reservationForm">
                     <div class="form-group"><label class="form-label">고객명 *</label><input type="text" class="form-input" id="formCustomerName" required></div>
                     <div class="form-row">
-                        <div class="form-group"><label class="form-label">전화번호 *</label><input type="tel" class="form-input" id="formPhone" required></div>
+                        <div class="form-group"><label class="form-label">연락처 *</label><input type="tel" class="form-input" id="formPhone" required></div>
                         <div class="form-group"><label class="form-label">이메일</label><input type="email" class="form-input" id="formEmail"></div>
                     </div>
                     <div class="form-row">
@@ -188,7 +189,7 @@
                         <div class="form-group"><label class="form-label">체크아웃 *</label><input type="date" class="form-input" id="formCheckOut" required></div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label class="form-label">객실 타입</label><select class="form-input" id="formRoomType"><option value="호수뷰객실">호수뷰객실</option><option value="Forest">Forest</option><option value="Forest mini">Forest mini</option><option value="Forest 패밀리룸">Forest 패밀리룸</option><option value="Forest mini 패밀리룸">Forest mini 패밀리룸</option></select></div>
+                        <div class="form-group"><label class="form-label">객실명</label><select class="form-input" id="formRoomType"><option value="호수뷰객실">호수뷰객실</option><option value="Forest">Forest</option><option value="Forest mini">Forest mini</option><option value="Forest 패밀리룸">Forest 패밀리룸</option><option value="Forest mini 패밀리룸">Forest mini 패밀리룸</option></select></div>
                         <div class="form-group"><label class="form-label">인원</label><select class="form-input" id="formGuests"></select></div>
                     </div>
                     <div class="form-group"><label class="form-label"><input type="checkbox" id="formBbq"> 숯불 바베큐 (현장 결제)</label></div>
@@ -196,11 +197,15 @@
                     <div class="price-summary">
                         <h4>예약 금액</h4>
                         <div class="price-item"><span>객실 요금</span><span id="summaryRoomRate">-</span></div>
-                        <div class="price-item"><span>추가 인원</span><span id="summaryExtraPerson">-</span></div>
+                        <div class="price-item"><span>추가 인원 요금</span><span id="summaryExtraPerson">-</span></div>
                         <div class="price-item"><span>바베큐</span><span id="summaryBbq">-</span></div>
                         <div class="price-item price-total"><span>총 금액</span><span id="summaryTotal">-</span></div>
                     </div>
-                    <input type="hidden" id="formAmount"><input type="hidden" id="formBbqCharge">
+                    <!-- [수정] 시트 헤더에 맞는 이름으로 hidden input 추가 -->
+                    <input type="hidden" id="form_객실요금">
+                    <input type="hidden" id="form_추가인원요금">
+                    <input type="hidden" id="form_바베큐(현장결제)">
+                    
                     <div class="reservation-actions" style="margin-top: 20px;" id="modalActionButtons"></div>
                 </form>
             </div>
@@ -230,80 +235,45 @@
         let calendar = null;
         let isCalendarRendered = false;
 
-  // --- API COMMUNICATION (JSONP) ---
+        // --- API COMMUNICATION (JSONP) ---
         function apiRequest(params) {
             return new Promise((resolve, reject) => {
-                // [수정] 로그인(checkPassword) 액션이 아닐 때만 비밀번호 존재 여부 검사
                 if (params.action !== 'checkPassword' && !sessionPassword) {
                     alert('인증 정보가 만료되었습니다. 다시 로그인해주세요.');
                     logout();
                     reject(new Error('No session password.'));
                     return;
                 }
-
                 const callbackName = 'jsonpCallback_' + Date.now() + Math.floor(Math.random() * 1000);
-                
-                // 로그인 시에는 함수 인자로 받은 비밀번호를, 그 외에는 세션 비밀번호를 사용
                 params.password = params.action === 'checkPassword' ? params.password : sessionPassword;
                 params.callback = callbackName;
-                
-                const queryString = Object.keys(params)
-                    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
-                    .join('&');
+                const queryString = Object.keys(params).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`).join('&');
                 
                 window[callbackName] = function(data) {
-                    if (data.success) {
-                        resolve(data);
-                    } else {
-                        console.error('API Error:', data.error);
-                        reject(new Error(data.error || '알 수 없는 서버 오류'));
-                    }
+                    if (data.success) { resolve(data); } else { console.error('API Error:', data.error); reject(new Error(data.error || '알 수 없는 서버 오류')); }
                     try { delete window[callbackName]; document.body.removeChild(script); } catch (e) {}
                 };
-
                 const script = document.createElement('script');
                 script.src = `${SCRIPT_URL}?${queryString}`;
-                
-                script.onerror = () => {
-                    reject(new Error('Script loading failed.'));
-                    try { delete window[callbackName]; document.body.removeChild(script); } catch (e) {}
-                };
-                
+                script.onerror = () => { reject(new Error('Script loading failed.')); try { delete window[callbackName]; document.body.removeChild(script); } catch (e) {} };
                 document.body.appendChild(script);
             });
         }
 
         // --- AUTHENTICATION ---
-                async function login() {
-                const password = document.getElementById('passwordInput').value;
-                if (!password) {
-                    alert('비밀번호를 입력하세요.');
-                    return;
-                }
-                
-                showLoading();
-                try {
-                    // [수정] 모든 요청을 일관되게 apiRequest를 사용하도록 변경
-                    const response = await apiRequest({
-                        action: 'checkPassword',
-                        password: password // apiRequest 함수 내부에서 자동으로 sessionPassword 대신 이 값을 사용합니다.
-                    });
-
-                    if (response.success) {
-                        sessionPassword = password;
-                        sessionStorage.setItem('chohoAdminToken', password);
-                        showDashboard();
-                    } else {
-                        // 서버에서 보내는 에러 메시지가 있다면 표시, 없다면 기본 메시지
-                        alert(response.error || '비밀번호가 올바르지 않습니다.');
-                    }
-                } catch(error) {
-                    console.error('Login error:', error);
-                    alert(`로그인 중 오류가 발생했습니다: ${error.message}`);
-                } finally {
-                    hideLoading();
-                }
-            }
+        async function login() {
+            const password = document.getElementById('passwordInput').value;
+            if (!password) { alert('비밀번호를 입력하세요.'); return; }
+            showLoading();
+            try {
+                const response = await apiRequest({ action: 'checkPassword', password: password });
+                if (response.success) {
+                    sessionPassword = password;
+                    sessionStorage.setItem('chohoAdminToken', password);
+                    showDashboard();
+                } else { alert(response.error || '비밀번호가 올바르지 않습니다.'); }
+            } catch(error) { alert(`로그인 중 오류가 발생했습니다: ${error.message}`); } finally { hideLoading(); }
+        }
         function logout() { sessionPassword = null; sessionStorage.removeItem('chohoAdminToken'); location.reload(); }
         function showDashboard() { document.getElementById('loginScreen').style.display = 'none'; document.getElementById('dashboard').style.display = 'block'; loadInitialData(); startAutoRefresh(); }
         
@@ -312,7 +282,10 @@
         function showLoading() { document.getElementById('loadingOverlay').classList.add('active'); }
         function hideLoading() { document.getElementById('loadingOverlay').classList.remove('active'); }
         function formatDate(dateStr) { if (!dateStr) return ''; const d = new Date(dateStr); return `${d.getMonth() + 1}/${d.getDate()} (${['일','월','화','수','목','금','토'][d.getDay()]})`; }
-        function getStatusText(s) { return { pending: '입금대기', confirmed: '예약확정', 'checked-in': '체크인', 'checked-out':'체크아웃', cancelled: '취소' }[s] || '알 수 없음'; }
+        function getStatusText(s) {
+            const status = s || 'pending';
+            return { pending: '입금대기', confirmed: '예약확정', 'checked-in': '체크인', 'checked-out':'체크아웃', cancelled: '취소' }[status] || '알 수 없음';
+        }
         
         // --- DATA HANDLING & UI ---
         async function loadInitialData() {
@@ -334,7 +307,7 @@
                 document.getElementById('totalReservations').textContent = s.totalReservations;
                 document.getElementById('confirmedReservations').textContent = s.confirmedReservations;
                 document.getElementById('todayCheckIn').textContent = s.todayCheckIn;
-                document.getElementById('monthlyRevenue').textContent = s.monthlyRevenue.toLocaleString() + '원';
+                document.getElementById('monthlyRevenue').textContent = (s.monthlyRevenue || 0).toLocaleString() + '원';
                 const badge = document.getElementById('pendingBadge');
                 if (s.pendingReservations > 0) { badge.textContent = s.pendingReservations; badge.style.display = 'block'; } else { badge.style.display = 'none'; }
             }
@@ -343,35 +316,43 @@
             const container = document.getElementById('reservationsList');
             const statusFilter = document.getElementById('statusFilter').value;
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = allReservations.filter(r => (statusFilter === 'all' || r.status === statusFilter) && ((r.customerName||'').toLowerCase().includes(searchTerm) || (r.phone||'').includes(searchTerm)));
+            const filtered = allReservations.filter(r => {
+                const status = r.status || 'pending';
+                const matchStatus = statusFilter === 'all' || status === statusFilter;
+                const matchSearch = (r['고객명'] || '').toLowerCase().includes(searchTerm) || (r['연락처'] || '').toString().includes(searchTerm);
+                return matchStatus && matchSearch;
+            });
             if (filtered.length === 0) { container.innerHTML = `<div class="no-reservations"><h3>예약이 없습니다.</h3><p>필터 조건을 확인하거나 새 예약을 추가하세요.</p></div>`; return; }
-            container.innerHTML = filtered.map(res => `
-                <div class="reservation-card" onclick="editReservation('${res.bookingId || res.id}')">
-                    <div class="reservation-header"><span style="font-weight:600;">#${sanitizeHTML(res.bookingId || res.id)}</span><span class="status-badge status-${res.status}">${getStatusText(res.status)}</span></div>
+            container.innerHTML = filtered.map(res => {
+                const id = res['예약번호'];
+                const status = res.status || 'pending';
+                return `
+                <div class="reservation-card" onclick="editReservation('${id}')">
+                    <div class="reservation-header"><span style="font-weight:600;">#${sanitizeHTML(id)}</span><span class="status-badge status-${status}">${getStatusText(status)}</span></div>
                     <div class="reservation-body">
-                        <div class="customer-info"><div class="customer-name">${sanitizeHTML(res.customerName)}</div><div class="customer-contact">📞 ${sanitizeHTML(res.phone)}</div></div>
+                        <div class="customer-info"><div class="customer-name">${sanitizeHTML(res['고객명'])}</div><div class="customer-contact">📞 ${sanitizeHTML(res['연락처'])}</div></div>
                         <div class="reservation-details">
-                            <div class="detail-item"><div class="detail-label">체크인</div><div class="detail-value">${formatDate(res.checkIn)}</div></div>
-                            <div class="detail-item"><div class="detail-label">체크아웃</div><div class="detail-value">${formatDate(res.checkOut)}</div></div>
-                            <div class="detail-item"><div class="detail-label">객실</div><div class="detail-value">${sanitizeHTML(res.roomName)}</div></div>
-                            <div class="detail-item"><div class="detail-label">인원</div><div class="detail-value">${res.guests}명</div></div>
+                            <div class="detail-item"><div class="detail-label">체크인</div><div class="detail-value">${formatDate(res['체크인'])}</div></div>
+                            <div class="detail-item"><div class="detail-label">체크아웃</div><div class="detail-value">${formatDate(res['체크아웃'])}</div></div>
+                            <div class="detail-item"><div class="detail-label">객실</div><div class="detail-value">${sanitizeHTML(res['객실명'])}</div></div>
+                            <div class="detail-item"><div class="detail-label">인원</div><div class="detail-value">${res['인원']}명</div></div>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
         function updateRoomStatus() { /* 생략 */ }
         function renderCalendar() {
             const calendarEl = document.getElementById('calendar');
-            const events = allReservations.filter(r => r.status !== 'cancelled').map(r => ({
-                title: `${r.roomName.replace('객실','').replace('패밀리룸','F')} - ${r.customerName}`, start: r.checkIn, end: r.checkOut,
+            const events = allReservations.filter(r => (r.status || 'pending') !== 'cancelled').map(r => ({
+                title: `${r['객실명']} - ${r['고객명']}`, start: r['체크인'], end: r['체크아웃'],
                 extendedProps: { reservation: r },
-                backgroundColor: {confirmed:'#27ae60', 'checked-in':'#3498db', pending:'#f39c12'}[r.status],
+                backgroundColor: {'confirmed':'#27ae60', 'checked-in':'#3498db', 'pending':'#f39c12'}[r.status || 'pending'],
             }));
             if (calendar) { calendar.destroy(); }
             calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth', headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
-                events: events, eventClick: (info) => editReservation(info.event.extendedProps.reservation.bookingId || info.event.extendedProps.reservation.id)
+                events: events, eventClick: (info) => editReservation(info.event.extendedProps.reservation['예약번호'])
             });
             calendar.render(); isCalendarRendered = true;
         }
@@ -391,45 +372,48 @@
             document.getElementById('modalTitle').textContent = '새 예약 추가';
             document.getElementById('reservationForm').reset();
             populateGuestOptions(document.getElementById('formRoomType').value); updatePriceSummary();
-            document.getElementById('modalActionButtons').innerHTML = `<button type="button" id="saveReservationButton" class="action-btn btn-success" style="flex:1;">저장</button>`;
-            document.getElementById('saveReservationButton').addEventListener('click', saveReservation);
+            document.getElementById('modalActionButtons').innerHTML = `<button type="button" id="saveNewReservationBtn" class="action-btn btn-success" style="flex:1;">새 예약 저장</button>`;
+            document.getElementById('saveNewReservationBtn').addEventListener('click', saveReservation);
             document.getElementById('reservationModal').classList.add('active');
         }
         function editReservation(id) {
-            const reservation = allReservations.find(r => (r.bookingId || r.id) === id); if (!reservation) { alert('예약 정보를 찾을 수 없습니다.'); return; }
+            const reservation = allReservations.find(r => r['예약번호'] === id); if (!reservation) { alert('예약 정보를 찾을 수 없습니다.'); return; }
             currentEditData = reservation; document.getElementById('modalTitle').textContent = '예약 정보 수정';
-            populateGuestOptions(reservation.roomName);
-            document.getElementById('formCustomerName').value = reservation.customerName; document.getElementById('formPhone').value = reservation.phone; document.getElementById('formEmail').value = reservation.email || '';
-            document.getElementById('formCheckIn').value = reservation.checkIn; document.getElementById('formCheckOut').value = reservation.checkOut;
-            document.getElementById('formRoomType').value = reservation.roomName; document.getElementById('formGuests').value = reservation.guests;
-            document.getElementById('formBbq').checked = (reservation.bbqCharge > 0); document.getElementById('formRequests').value = reservation.requests || '';
+            const roomName = reservation['객실명'];
+            populateGuestOptions(roomName);
+            document.getElementById('formRoomType').value = roomName;
+            document.getElementById('formCustomerName').value = reservation['고객명']; document.getElementById('formPhone').value = reservation['연락처']; document.getElementById('formEmail').value = reservation['이메일'] || '';
+            document.getElementById('formCheckIn').value = reservation['체크인']; document.getElementById('formCheckOut').value = reservation['체크아웃'];
+            document.getElementById('formGuests').value = reservation['인원'];
+            document.getElementById('formBbq').checked = (reservation['바베큐(현장결제)'] > 0); document.getElementById('formRequests').value = reservation['요청사항'] || '';
             updatePriceSummary();
-            
             const actionButtons = document.getElementById('modalActionButtons');
-            let buttonsHTML = `<button type="button" id="saveReservationButton" class="action-btn btn-success" style="flex:1;">수정 저장</button>`;
-            if (reservation.status === 'pending' && !reservation.depositConfirmed) { buttonsHTML += `<button type="button" id="confirmDepositBtn" class="action-btn btn-primary">입금확인</button>`; }
-            if (reservation.status !== 'cancelled') { buttonsHTML += `<button type="button" id="cancelReservationBtn" class="action-btn btn-danger">예약취소</button>`;}
+            const status = reservation.status || 'pending';
+            let buttonsHTML = `<button type="button" id="saveReservationBtn" class="action-btn btn-success" style="flex:1;">수정 저장</button>`;
+            if (status === 'pending' && !reservation.depositConfirmed) { buttonsHTML += `<button type="button" id="confirmDepositBtn" class="action-btn btn-primary">입금확인</button>`; }
+            if (status !== 'cancelled') { buttonsHTML += `<button type="button" id="cancelReservationBtn" class="action-btn btn-danger">예약취소</button>`;}
             actionButtons.innerHTML = buttonsHTML;
-            
-            document.getElementById('saveReservationButton').addEventListener('click', saveReservation);
-            if(document.getElementById('confirmDepositBtn')) document.getElementById('confirmDepositBtn').addEventListener('click', () => updateReservationAction(currentEditData.rowIndex, { depositConfirmed: true }, '입금이 확인되었습니다.'));
-            if(document.getElementById('cancelReservationBtn')) document.getElementById('cancelReservationBtn').addEventListener('click', () => updateReservationAction(currentEditData.rowIndex, { status: 'cancelled' }, '예약이 취소되었습니다.'));
-            
+            document.getElementById('saveReservationBtn').addEventListener('click', saveReservation);
+            if(document.getElementById('confirmDepositBtn')) document.getElementById('confirmDepositBtn').addEventListener('click', () => updateReservationAction(currentEditData.rowIndex, { depositConfirmed: true, status: 'confirmed' }, '입금이 확인되어 예약확정 처리되었습니다.'));
+            if(document.getElementById('cancelReservationBtn')) document.getElementById('cancelReservationBtn').addEventListener('click', () => { if(confirm('정말로 예약을 취소하시겠습니까?')) updateReservationAction(currentEditData.rowIndex, { status: 'cancelled' }, '예약이 취소되었습니다.'); });
             document.getElementById('reservationModal').classList.add('active');
         }
         function closeModal() { document.getElementById('reservationModal').classList.remove('active'); }
         async function saveReservation() {
             const formData = {
-                customerName: document.getElementById('formCustomerName').value, phone: document.getElementById('formPhone').value, email: document.getElementById('formEmail').value,
-                checkIn: document.getElementById('formCheckIn').value, checkOut: document.getElementById('formCheckOut').value, roomName: document.getElementById('formRoomType').value,
-                guests: parseInt(document.getElementById('formGuests').value), requests: document.getElementById('formRequests').value,
-                totalAmount: parseInt(document.getElementById('formAmount').value), bbqCharge: parseInt(document.getElementById('formBbqCharge').value) || 0
+                '고객명': document.getElementById('formCustomerName').value, '연락처': document.getElementById('formPhone').value, '이메일': document.getElementById('formEmail').value,
+                '체크인': document.getElementById('formCheckIn').value, '체크아웃': document.getElementById('formCheckOut').value, '객실명': document.getElementById('formRoomType').value,
+                '인원': parseInt(document.getElementById('formGuests').value), '요청사항': document.getElementById('formRequests').value,
+                '객실요금': parseInt(document.getElementById('form_객실요금').value), 
+                '추가인원요금': parseInt(document.getElementById('form_추가인원요금').value),
+                '바베큐(현장결제)': parseInt(document.getElementById('form_바베큐(현장결제)').value) || 0,
             };
-            if (!formData.customerName || !formData.phone || !formData.checkIn || !formData.checkOut) { alert('필수 항목(*)을 모두 입력해주세요.'); return; }
+            if (!formData['고객명'] || !formData['연락처'] || !formData['체크인'] || !formData['체크아웃']) { alert('필수 항목(*)을 모두 입력해주세요.'); return; }
             if(currentEditData) {
+                formData.status = currentEditData.status || 'pending'; // 기존 상태 유지
                 updateReservationAction(currentEditData.rowIndex, formData, '예약이 수정되었습니다.');
             } else {
-                formData.status = 'confirmed'; formData.depositConfirmed = true;
+                formData.status = 'confirmed'; formData.depositConfirmed = true; formData['예약일시'] = new Date().toLocaleString('sv-SE');
                 showLoading();
                 try {
                     await apiRequest({ action: 'addReservation', data: JSON.stringify(formData) });
@@ -443,13 +427,15 @@
             const guests = parseInt(document.getElementById('formGuests').value || 0); const bbqChecked = document.getElementById('formBbq').checked; const room = roomData[roomName]; if (!room || !checkIn || !checkOut) return;
             const nights = Math.max(1, Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)));
             const roomRate = room.basePrice * nights; const extraGuests = Math.max(0, guests - room.baseGuests);
-            const extraPersonCharge = extraGuests * room.extraCharge * nights; const bbqCharge = bbqChecked ? BBQ_PRICE : 0;
+            const extraPersonCharge = extraGuests * room.extraCharge; const bbqCharge = bbqChecked ? BBQ_PRICE : 0;
             const totalAmount = roomRate + extraPersonCharge;
             document.getElementById('summaryRoomRate').textContent = `${roomRate.toLocaleString()}원 (${nights}박)`;
             document.getElementById('summaryExtraPerson').textContent = `${extraPersonCharge.toLocaleString()}원 (${extraGuests}명)`;
             document.getElementById('summaryBbq').textContent = `${bbqCharge.toLocaleString()}원 (현장결제)`;
-            document.getElementById('summaryTotal').textContent = `${totalAmount.toLocaleString()}원`;
-            document.getElementById('formAmount').value = totalAmount; document.getElementById('formBbqCharge').value = bbqCharge;
+            document.getElementById('summaryTotal').textContent = `${(totalAmount).toLocaleString()}원`;
+            document.getElementById('form_객실요금').value = totalAmount; // '객실요금'이 총금액인 것으로 보임
+            document.getElementById('form_추가인원요금').value = extraPersonCharge;
+            document.getElementById('form_바베큐(현장결제)').value = bbqCharge;
         }
         function populateGuestOptions(roomName) {
             const room = roomData[roomName]; if(!room) return;
@@ -464,7 +450,7 @@
             document.getElementById('logoutButton').addEventListener('click', logout);
             document.getElementById('addReservationButton').addEventListener('click', showAddReservationModal);
             document.getElementById('closeModalButton').addEventListener('click', closeModal);
-            document.getElementById('cancelModalButton').addEventListener('click', closeModal); // 모달 안 취소버튼
+            document.getElementById('cancelModalButton').addEventListener('click', closeModal); 
             document.getElementById('statusFilter').addEventListener('change', displayReservations);
             document.getElementById('searchInput').addEventListener('keyup', displayReservations);
             document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', e => {
