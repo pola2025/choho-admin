@@ -230,22 +230,45 @@
         let calendar = null;
         let isCalendarRendered = false;
 
-        // --- API COMMUNICATION (JSONP) ---
+  // --- API COMMUNICATION (JSONP) ---
         function apiRequest(params) {
             return new Promise((resolve, reject) => {
-                if (!sessionPassword) { alert('인증 정보가 만료되었습니다. 다시 로그인해주세요.'); logout(); reject(new Error('No session password.')); return; }
+                // [수정] 로그인(checkPassword) 액션이 아닐 때만 비밀번호 존재 여부 검사
+                if (params.action !== 'checkPassword' && !sessionPassword) {
+                    alert('인증 정보가 만료되었습니다. 다시 로그인해주세요.');
+                    logout();
+                    reject(new Error('No session password.'));
+                    return;
+                }
+
                 const callbackName = 'jsonpCallback_' + Date.now() + Math.floor(Math.random() * 1000);
-                params.password = sessionPassword;
+                
+                // 로그인 시에는 함수 인자로 받은 비밀번호를, 그 외에는 세션 비밀번호를 사용
+                params.password = params.action === 'checkPassword' ? params.password : sessionPassword;
                 params.callback = callbackName;
-                const queryString = Object.keys(params).map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`).join('&');
+                
+                const queryString = Object.keys(params)
+                    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+                    .join('&');
                 
                 window[callbackName] = function(data) {
-                    if (data.success) { resolve(data); } else { console.error('API Error:', data.error); reject(new Error(data.error || '알 수 없는 서버 오류')); }
+                    if (data.success) {
+                        resolve(data);
+                    } else {
+                        console.error('API Error:', data.error);
+                        reject(new Error(data.error || '알 수 없는 서버 오류'));
+                    }
                     try { delete window[callbackName]; document.body.removeChild(script); } catch (e) {}
                 };
+
                 const script = document.createElement('script');
                 script.src = `${SCRIPT_URL}?${queryString}`;
-                script.onerror = () => { reject(new Error('Script loading failed.')); try { delete window[callbackName]; document.body.removeChild(script); } catch (e) {} };
+                
+                script.onerror = () => {
+                    reject(new Error('Script loading failed.'));
+                    try { delete window[callbackName]; document.body.removeChild(script); } catch (e) {}
+                };
+                
                 document.body.appendChild(script);
             });
         }
