@@ -7,7 +7,6 @@
     <!-- FullCalendar 라이브러리 추가 -->
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
     <style>
-        /* 전체적인 CSS는 이전과 동일합니다. */
         :root {
             --primary-color: #2d5016;
             --secondary-color: #558b2f;
@@ -18,69 +17,107 @@
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--light-gray); color: var(--dark-text); }
-        /* ... (이전 CSS 코드와 동일) ... */
         .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); }
-        .login-box h1 { color: var(--primary-color); }
-        .login-button { background: var(--accent-green); }
-        .header h1 { color: var(--primary-color); }
-        .stat-value { color: var(--primary-color); }
-        .tab.active { color: var(--accent-green); border-bottom-color: var(--accent-green); }
-        .customer-name { color: var(--primary-color); }
-        .floating-add-btn { background: var(--accent-green); }
-        .spinner { border-top-color: var(--accent-green); }
-
-        /* 캘린더 UI 개선 */
-        #calendar {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        .fc-event {
-            cursor: pointer;
-            border: none !important;
-            padding: 5px;
-        }
-        .fc-event-main {
-            font-size: 12px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        
-        /* 예약 금액 요약 UI */
-        .price-summary {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            border: 1px solid #e0e0e0;
-        }
-        .price-summary h4 {
-            margin-bottom: 10px;
-            font-size: 16px;
-            color: var(--primary-color);
-        }
-        .price-item {
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-            margin-bottom: 5px;
-        }
-        .price-total {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #ddd;
-            font-weight: bold;
-            font-size: 18px;
-            color: var(--accent-green);
-        }
-        .no-reservations {
-            text-align: center;
-            padding: 50px;
-            background: white;
-            border-radius: 12px;
-            color: var(--light-text);
+        .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }
+        .login-box h1 { text-align: center; color: var(--primary-color); margin-bottom: 30px; }
+        .login-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; font-size: 16px; }
+        .login-button { width: 100%; padding: 12px; background: var(--accent-green); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.3s; }
+        .login-button:hover { background: #2ecc71; }
+        .dashboard { display: none; min-height: 100vh; background: var(--light-gray); }
+        .header { background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .header-content { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 20px; color: var(--primary-color); }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        .sync-status { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--light-text); }
+        .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .logout-btn { padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .stats-container { padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+        .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e0e0e0; }
+        .stat-card h3 { font-size: 14px; color: var(--light-text); margin-bottom: 8px; }
+        .stat-value { font-size: 28px; font-weight: 700; color: var(--primary-color); }
+        .stat-card.accent-yellow { border-left: 4px solid #f39c12; }
+        .stat-card.accent-green { border-left: 4px solid var(--accent-green); }
+        .stat-card.accent-blue { border-left: 4px solid #3498db; }
+        .stat-card.accent-purple { border-left: 4px solid #9b59b6; }
+        .tabs { background: white; border-bottom: 1px solid #e0e0e0; position: sticky; top: 60px; z-index: 90; }
+        .tabs-content { display: flex; padding: 0 20px; overflow-x: auto;}
+        .tab { padding: 15px 20px; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; position: relative; white-space: nowrap; }
+        .tab.active { color: var(--accent-green); border-bottom-color: var(--accent-green); background: #f0f8f0; }
+        .tab-badge { position: absolute; top: 8px; right: 8px; background: #e74c3c; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 600; }
+        .content { padding: 20px; }
+        .tab-content { display: none; animation: fadeIn 0.3s ease-in; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .reservations-container { display: grid; gap: 15px; }
+        .reservation-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e0e0e0; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; cursor:pointer; }
+        .reservation-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .reservation-header { padding: 15px 20px; background: #f8f9fa; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+        .reservation-body { padding: 20px; }
+        .customer-info { margin-bottom: 15px; }
+        .customer-name { font-size: 18px; font-weight: 600; color: var(--primary-color); margin-bottom: 5px; }
+        .customer-contact { font-size: 14px; color: var(--light-text); line-height: 1.5; }
+        .reservation-details { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px; }
+        .detail-item { background: #f8f9fa; padding: 12px; border-radius: 8px; }
+        .detail-label { font-size: 12px; color: var(--light-text); margin-bottom: 4px; }
+        .detail-value { font-size: 14px; font-weight: 600; color: var(--dark-text); }
+        .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-confirmed { background: #d4edda; color: #155724; }
+        .status-checked-in { background: #d1ecf1; color: #0c5460; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
+        .action-btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; transition: all 0.3s; font-weight: 500; }
+        .btn-primary { background: #3498db; color: white; }
+        .btn-success { background: var(--accent-green); color: white; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-secondary { background: #95a5a6; color: white; }
+        .action-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .room-card { background: white; border-radius: 12px; padding: 20px; border: 2px solid #e0e0e0; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .room-card.occupied { background: #ffe5e5; border-color: #ffb3b3; }
+        .room-card.available { background: #e5ffe5; border-color: #b3ffb3; }
+        .room-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .room-number { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+        .room-type { font-size: 14px; color: var(--light-text); margin-bottom: 12px; }
+        .room-status { font-size: 14px; font-weight: 600; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 12px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; animation: fadeIn 0.3s; }
+        .modal-header { padding: 20px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+        .form-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .floating-add-btn { position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px; background: var(--accent-green); color: white; border: none; border-radius: 50%; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s; z-index: 50; }
+        .floating-add-btn:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+        .loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 2000; align-items: center; justify-content: center; }
+        .loading-overlay.active { display: flex; }
+        .spinner { width: 50px; height: 50px; border: 4px solid #f3f3f3; border-top: 4px solid var(--accent-green); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .filter-bar { background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .filter-item { display: flex; align-items: center; gap: 8px; }
+        .filter-select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: white; }
+        .search-box { flex: 1; min-width: 200px; position: relative; }
+        .search-input { width: 100%; padding: 8px 12px 8px 36px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--light-text); }
+        #calendar { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .fc-event { cursor: pointer; border: none !important; padding: 5px; }
+        .fc-event-main { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .price-summary { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 20px; border: 1px solid #e0e0e0; }
+        .price-summary h4 { margin-bottom: 10px; font-size: 16px; color: var(--primary-color); }
+        .price-item { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
+        .price-total { margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; font-weight: bold; font-size: 18px; color: var(--accent-green); }
+        .no-reservations { text-align: center; padding: 50px; background: white; border-radius: 12px; color: var(--light-text); }
+        @media (max-width: 768px) {
+            .stats-container { grid-template-columns: 1fr; }
+            .reservation-details { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .filter-bar { flex-direction: column; align-items: stretch; }
+            .search-box { width: 100%; }
+            .header h1 { font-size: 16px; }
+            .sync-status { display: none; }
         }
     </style>
 </head>
@@ -96,9 +133,8 @@
     
     <!-- 메인 대시보드 -->
     <div class="dashboard" id="dashboard">
-        <!-- 헤더 및 통계 (이전과 동일) -->
         <div class="header">
-             <div class="header-content">
+            <div class="header-content">
                 <h1>초호펜션 예약 관리</h1>
                 <div class="header-actions">
                     <div class="sync-status">
@@ -115,8 +151,6 @@
             <div class="stat-card accent-blue"><h3>오늘 체크인</h3><div class="stat-value" id="todayCheckIn">0</div></div>
             <div class="stat-card accent-purple"><h3>이번달 매출</h3><div class="stat-value" id="monthlyRevenue">0원</div></div>
         </div>
-        
-        <!-- 탭 네비게이션 -->
         <div class="tabs">
             <div class="tabs-content">
                 <div class="tab active" data-tab="reservations">예약 관리<span class="tab-badge" id="pendingBadge" style="display: none;">0</span></div>
@@ -124,8 +158,6 @@
                 <div class="tab" data-tab="calendar">캘린더</div>
             </div>
         </div>
-        
-        <!-- 메인 컨텐츠 -->
         <div class="content">
             <div class="tab-content active" id="reservationsTab">
                 <div class="filter-bar">
@@ -137,7 +169,6 @@
             <div class="tab-content" id="roomsTab"><div class="rooms-grid" id="roomsList"></div></div>
             <div class="tab-content" id="calendarTab"><div id="calendar"></div></div>
         </div>
-        
         <button id="addReservationButton" class="floating-add-btn">+</button>
     </div>
     
@@ -162,8 +193,6 @@
                     </div>
                     <div class="form-group"><label class="form-label"><input type="checkbox" id="formBbq"> 숯불 바베큐 (현장 결제)</label></div>
                     <div class="form-group"><label class="form-label">요청사항</label><textarea class="form-input" id="formRequests" rows="3"></textarea></div>
-                    
-                    <!-- 예약 금액 요약 -->
                     <div class="price-summary">
                         <h4>예약 금액</h4>
                         <div class="price-item"><span>객실 요금</span><span id="summaryRoomRate">-</span></div>
@@ -172,11 +201,7 @@
                         <div class="price-item price-total"><span>총 금액</span><span id="summaryTotal">-</span></div>
                     </div>
                     <input type="hidden" id="formAmount"><input type="hidden" id="formBbqCharge">
-                    
-                    <div style="display: flex; gap: 10px; margin-top: 20px;">
-                        <button type="button" id="cancelModalButton" class="action-btn btn-secondary" style="flex:1;">취소</button>
-                        <button type="button" id="saveReservationButton" class="action-btn btn-success" style="flex:1;">저장</button>
-                    </div>
+                    <div class="reservation-actions" style="margin-top: 20px;" id="modalActionButtons"></div>
                 </form>
             </div>
         </div>
@@ -231,7 +256,14 @@
             if (!password) { alert('비밀번호를 입력하세요.'); return; }
             showLoading();
             try {
-                const response = await apiRequest({ action: 'checkPassword', password: password });
+                const response = await new Promise((resolve, reject) => {
+                    const callbackName = 'loginCallback_' + Date.now();
+                    window[callbackName] = (data) => { resolve(data); delete window[callbackName]; try { document.body.removeChild(script); } catch(e){} };
+                    const script = document.createElement('script');
+                    script.src = `${SCRIPT_URL}?action=checkPassword&password=${encodeURIComponent(password)}&callback=${callbackName}`;
+                    script.onerror = () => { reject(new Error('Login script failed to load.')); delete window[callbackName]; };
+                    document.body.appendChild(script);
+                });
                 if (response.success) {
                     sessionPassword = password;
                     sessionStorage.setItem('chohoAdminToken', password);
@@ -247,15 +279,15 @@
         function showLoading() { document.getElementById('loadingOverlay').classList.add('active'); }
         function hideLoading() { document.getElementById('loadingOverlay').classList.remove('active'); }
         function formatDate(dateStr) { if (!dateStr) return ''; const d = new Date(dateStr); return `${d.getMonth() + 1}/${d.getDate()} (${['일','월','화','수','목','금','토'][d.getDay()]})`; }
-        function getStatusText(s) { return { pending: '입금대기', confirmed: '예약확정', 'checked-in': '체크인', cancelled: '취소' }[s] || '알 수 없음'; }
+        function getStatusText(s) { return { pending: '입금대기', confirmed: '예약확정', 'checked-in': '체크인', 'checked-out':'체크아웃', cancelled: '취소' }[s] || '알 수 없음'; }
         
-        // --- DATA HANDLING ---
+        // --- DATA HANDLING & UI ---
         async function loadInitialData() {
             showLoading();
             try {
                 await Promise.all([loadReservations(), updateDashboard()]);
                 const now = new Date(); document.getElementById('lastSync').textContent = `마지막 동기화: ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
-                if (isCalendarRendered) renderCalendar(); // 캘린더가 렌더링된 상태면 데이터 새로고침
+                if (isCalendarRendered) renderCalendar();
             } catch (error) { alert(`데이터를 불러오는 데 실패했습니다: ${error.message}`); } finally { hideLoading(); }
         }
         async function loadReservations() {
@@ -274,22 +306,15 @@
                 if (s.pendingReservations > 0) { badge.textContent = s.pendingReservations; badge.style.display = 'block'; } else { badge.style.display = 'none'; }
             }
         }
-
-        // --- UI & DISPLAY ---
         function displayReservations() {
             const container = document.getElementById('reservationsList');
             const statusFilter = document.getElementById('statusFilter').value;
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const filtered = allReservations.filter(r => (statusFilter === 'all' || r.status === statusFilter) && ((r.customerName||'').toLowerCase().includes(searchTerm) || (r.phone||'').includes(searchTerm)));
-            
             if (filtered.length === 0) { container.innerHTML = `<div class="no-reservations"><h3>예약이 없습니다.</h3><p>필터 조건을 확인하거나 새 예약을 추가하세요.</p></div>`; return; }
-
             container.innerHTML = filtered.map(res => `
                 <div class="reservation-card" onclick="editReservation('${res.bookingId || res.id}')">
-                    <div class="reservation-header">
-                        <span style="font-weight:600;">#${sanitizeHTML(res.bookingId || res.id)}</span>
-                        <span class="status-badge status-${res.status}">${getStatusText(res.status)}</span>
-                    </div>
+                    <div class="reservation-header"><span style="font-weight:600;">#${sanitizeHTML(res.bookingId || res.id)}</span><span class="status-badge status-${res.status}">${getStatusText(res.status)}</span></div>
                     <div class="reservation-body">
                         <div class="customer-info"><div class="customer-name">${sanitizeHTML(res.customerName)}</div><div class="customer-contact">📞 ${sanitizeHTML(res.phone)}</div></div>
                         <div class="reservation-details">
@@ -302,59 +327,41 @@
                 </div>
             `).join('');
         }
-        function updateRoomStatus() { /* 이전 코드와 동일, 생략 가능 */ }
+        function updateRoomStatus() { /* 생략 */ }
         function renderCalendar() {
             const calendarEl = document.getElementById('calendar');
             const events = allReservations.filter(r => r.status !== 'cancelled').map(r => ({
-                title: `${r.roomName.replace('객실','').replace('패밀리룸','F')} - ${r.customerName}`,
-                start: r.checkIn,
-                end: r.checkOut,
+                title: `${r.roomName.replace('객실','').replace('패밀리룸','F')} - ${r.customerName}`, start: r.checkIn, end: r.checkOut,
                 extendedProps: { reservation: r },
-                backgroundColor: r.status === 'confirmed' ? '#27ae60' : (r.status === 'checked-in' ? '#3498db' : '#f39c12'),
+                backgroundColor: {confirmed:'#27ae60', 'checked-in':'#3498db', pending:'#f39c12'}[r.status],
             }));
             if (calendar) { calendar.destroy(); }
             calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
-                events: events,
-                eventClick: function(info) { editReservation(info.event.extendedProps.reservation.bookingId || info.event.extendedProps.reservation.id); }
+                initialView: 'dayGridMonth', headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+                events: events, eventClick: (info) => editReservation(info.event.extendedProps.reservation.bookingId || info.event.extendedProps.reservation.id)
             });
-            calendar.render();
-            isCalendarRendered = true;
+            calendar.render(); isCalendarRendered = true;
         }
 
-        // --- ACTIONS & EVENT HANDLERS ---
+        // --- ACTIONS & MODAL ---
         function startAutoRefresh() { if (autoRefreshInterval) clearInterval(autoRefreshInterval); autoRefreshInterval = setInterval(loadInitialData, 30000); }
         async function updateReservationAction(rowIndex, updates, successMsg) {
             showLoading();
             try {
                 await apiRequest({ action: 'updateReservation', rowIndex: rowIndex, updates: JSON.stringify(updates) });
                 alert(successMsg);
-                await loadInitialData();
-            } catch (error) { alert(`처리 중 오류가 발생했습니다: ${error.message}`); } finally { hideLoading(); }
-        }
-        function confirmDeposit(id, rowIndex) { if (confirm('입금을 확인하셨습니까?')) updateReservationAction(rowIndex, { depositConfirmed: true }, '입금이 확인되었습니다.'); }
-        function updateReservationStatus(id, rowIndex, status, msg) { if (confirm(msg)) updateReservationAction(rowIndex, { status }, '상태가 업데이트되었습니다.'); }
-
-        async function saveReservation() {
-            const formData = {
-                customerName: document.getElementById('formCustomerName').value, phone: document.getElementById('formPhone').value, email: document.getElementById('formEmail').value,
-                checkIn: document.getElementById('formCheckIn').value, checkOut: document.getElementById('formCheckOut').value, roomName: document.getElementById('formRoomType').value,
-                guests: parseInt(document.getElementById('formGuests').value), requests: document.getElementById('formRequests').value,
-                totalAmount: parseInt(document.getElementById('formAmount').value), bbqCharge: parseInt(document.getElementById('formBbqCharge').value) || 0,
-                status: 'confirmed', depositConfirmed: true
-            };
-            if (!formData.customerName || !formData.phone || !formData.checkIn || !formData.checkOut) { alert('필수 항목(*)을 모두 입력해주세요.'); return; }
-            showLoading();
-            try {
-                if (currentEditData) { await apiRequest({ action: 'updateReservation', rowIndex: currentEditData.rowIndex, updates: JSON.stringify(formData) }); alert('예약이 수정되었습니다.'); } 
-                else { await apiRequest({ action: 'addReservation', data: JSON.stringify(formData) }); alert('예약이 추가되었습니다.'); }
                 closeModal(); await loadInitialData();
             } catch (error) { alert(`처리 중 오류가 발생했습니다: ${error.message}`); } finally { hideLoading(); }
         }
-
-        // --- MODAL & FORM ---
-        function showAddReservationModal() { currentEditData = null; document.getElementById('modalTitle').textContent = '새 예약 추가'; document.getElementById('reservationForm').reset(); updatePriceSummary(); document.getElementById('reservationModal').classList.add('active'); }
+        function showAddReservationModal() {
+            currentEditData = null;
+            document.getElementById('modalTitle').textContent = '새 예약 추가';
+            document.getElementById('reservationForm').reset();
+            populateGuestOptions(document.getElementById('formRoomType').value); updatePriceSummary();
+            document.getElementById('modalActionButtons').innerHTML = `<button type="button" id="saveReservationButton" class="action-btn btn-success" style="flex:1;">저장</button>`;
+            document.getElementById('saveReservationButton').addEventListener('click', saveReservation);
+            document.getElementById('reservationModal').classList.add('active');
+        }
         function editReservation(id) {
             const reservation = allReservations.find(r => (r.bookingId || r.id) === id); if (!reservation) { alert('예약 정보를 찾을 수 없습니다.'); return; }
             currentEditData = reservation; document.getElementById('modalTitle').textContent = '예약 정보 수정';
@@ -363,41 +370,58 @@
             document.getElementById('formCheckIn').value = reservation.checkIn; document.getElementById('formCheckOut').value = reservation.checkOut;
             document.getElementById('formRoomType').value = reservation.roomName; document.getElementById('formGuests').value = reservation.guests;
             document.getElementById('formBbq').checked = (reservation.bbqCharge > 0); document.getElementById('formRequests').value = reservation.requests || '';
-            updatePriceSummary(); document.getElementById('reservationModal').classList.add('active');
+            updatePriceSummary();
+            
+            const actionButtons = document.getElementById('modalActionButtons');
+            let buttonsHTML = `<button type="button" id="saveReservationButton" class="action-btn btn-success" style="flex:1;">수정 저장</button>`;
+            if (reservation.status === 'pending' && !reservation.depositConfirmed) { buttonsHTML += `<button type="button" id="confirmDepositBtn" class="action-btn btn-primary">입금확인</button>`; }
+            if (reservation.status !== 'cancelled') { buttonsHTML += `<button type="button" id="cancelReservationBtn" class="action-btn btn-danger">예약취소</button>`;}
+            actionButtons.innerHTML = buttonsHTML;
+            
+            document.getElementById('saveReservationButton').addEventListener('click', saveReservation);
+            if(document.getElementById('confirmDepositBtn')) document.getElementById('confirmDepositBtn').addEventListener('click', () => updateReservationAction(currentEditData.rowIndex, { depositConfirmed: true }, '입금이 확인되었습니다.'));
+            if(document.getElementById('cancelReservationBtn')) document.getElementById('cancelReservationBtn').addEventListener('click', () => updateReservationAction(currentEditData.rowIndex, { status: 'cancelled' }, '예약이 취소되었습니다.'));
+            
+            document.getElementById('reservationModal').classList.add('active');
         }
         function closeModal() { document.getElementById('reservationModal').classList.remove('active'); }
+        async function saveReservation() {
+            const formData = {
+                customerName: document.getElementById('formCustomerName').value, phone: document.getElementById('formPhone').value, email: document.getElementById('formEmail').value,
+                checkIn: document.getElementById('formCheckIn').value, checkOut: document.getElementById('formCheckOut').value, roomName: document.getElementById('formRoomType').value,
+                guests: parseInt(document.getElementById('formGuests').value), requests: document.getElementById('formRequests').value,
+                totalAmount: parseInt(document.getElementById('formAmount').value), bbqCharge: parseInt(document.getElementById('formBbqCharge').value) || 0
+            };
+            if (!formData.customerName || !formData.phone || !formData.checkIn || !formData.checkOut) { alert('필수 항목(*)을 모두 입력해주세요.'); return; }
+            if(currentEditData) {
+                updateReservationAction(currentEditData.rowIndex, formData, '예약이 수정되었습니다.');
+            } else {
+                formData.status = 'confirmed'; formData.depositConfirmed = true;
+                showLoading();
+                try {
+                    await apiRequest({ action: 'addReservation', data: JSON.stringify(formData) });
+                    alert('예약이 추가되었습니다.');
+                    closeModal(); await loadInitialData();
+                } catch(error) { alert(`처리 중 오류가 발생했습니다: ${error.message}`); } finally { hideLoading(); }
+            }
+        }
         function updatePriceSummary() {
-            const roomName = document.getElementById('formRoomType').value;
-            const checkIn = document.getElementById('formCheckIn').value;
-            const checkOut = document.getElementById('formCheckOut').value;
-            const guests = parseInt(document.getElementById('formGuests').value || 0);
-            const bbqChecked = document.getElementById('formBbq').checked;
-            const room = roomData[roomName];
-            if (!room || !checkIn || !checkOut) return;
-
+            const roomName = document.getElementById('formRoomType').value; const checkIn = document.getElementById('formCheckIn').value; const checkOut = document.getElementById('formCheckOut').value;
+            const guests = parseInt(document.getElementById('formGuests').value || 0); const bbqChecked = document.getElementById('formBbq').checked; const room = roomData[roomName]; if (!room || !checkIn || !checkOut) return;
             const nights = Math.max(1, Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24)));
-            const roomRate = room.basePrice * nights;
-            const extraGuests = Math.max(0, guests - room.baseGuests);
-            const extraPersonCharge = extraGuests * room.extraCharge * nights;
-            const bbqCharge = bbqChecked ? BBQ_PRICE : 0;
+            const roomRate = room.basePrice * nights; const extraGuests = Math.max(0, guests - room.baseGuests);
+            const extraPersonCharge = extraGuests * room.extraCharge * nights; const bbqCharge = bbqChecked ? BBQ_PRICE : 0;
             const totalAmount = roomRate + extraPersonCharge;
-
             document.getElementById('summaryRoomRate').textContent = `${roomRate.toLocaleString()}원 (${nights}박)`;
             document.getElementById('summaryExtraPerson').textContent = `${extraPersonCharge.toLocaleString()}원 (${extraGuests}명)`;
             document.getElementById('summaryBbq').textContent = `${bbqCharge.toLocaleString()}원 (현장결제)`;
             document.getElementById('summaryTotal').textContent = `${totalAmount.toLocaleString()}원`;
-            document.getElementById('formAmount').value = totalAmount;
-            document.getElementById('formBbqCharge').value = bbqCharge;
+            document.getElementById('formAmount').value = totalAmount; document.getElementById('formBbqCharge').value = bbqCharge;
         }
         function populateGuestOptions(roomName) {
             const room = roomData[roomName]; if(!room) return;
-            const guestSelect = document.getElementById('formGuests');
-            guestSelect.innerHTML = '';
-            for (let i = 1; i <= room.maxGuests; i++) {
-                const option = document.createElement('option');
-                option.value = i; option.textContent = `${i}명`;
-                guestSelect.appendChild(option);
-            }
+            const guestSelect = document.getElementById('formGuests'); guestSelect.innerHTML = '';
+            for (let i = 1; i <= room.maxGuests; i++) { const option = document.createElement('option'); option.value = i; option.textContent = `${i}명`; guestSelect.appendChild(option); }
         }
         
         // --- EVENT LISTENERS ---
@@ -407,25 +431,18 @@
             document.getElementById('logoutButton').addEventListener('click', logout);
             document.getElementById('addReservationButton').addEventListener('click', showAddReservationModal);
             document.getElementById('closeModalButton').addEventListener('click', closeModal);
-            document.getElementById('cancelModalButton').addEventListener('click', closeModal);
-            document.getElementById('saveReservationButton').addEventListener('click', saveReservation);
+            document.getElementById('cancelModalButton').addEventListener('click', closeModal); // 모달 안 취소버튼
             document.getElementById('statusFilter').addEventListener('change', displayReservations);
             document.getElementById('searchInput').addEventListener('keyup', displayReservations);
-            
             document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', e => {
                 document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
-                const tabName = e.currentTarget.dataset.tab;
-                e.currentTarget.classList.add('active');
+                const tabName = e.currentTarget.dataset.tab; e.currentTarget.classList.add('active');
                 document.getElementById(tabName + 'Tab').classList.add('active');
                 if (tabName === 'calendar' && !isCalendarRendered) renderCalendar();
             }));
-
-            ['formCheckIn', 'formCheckOut', 'formRoomType', 'formGuests', 'formBbq'].forEach(id => {
-                document.getElementById(id).addEventListener('change', updatePriceSummary);
-            });
+            ['formCheckIn', 'formCheckOut', 'formRoomType', 'formGuests', 'formBbq'].forEach(id => document.getElementById(id).addEventListener('change', updatePriceSummary));
             document.getElementById('formRoomType').addEventListener('change', e => populateGuestOptions(e.target.value));
             populateGuestOptions(document.getElementById('formRoomType').value);
-
             if (sessionStorage.getItem('chohoAdminToken')) { sessionPassword = sessionStorage.getItem('chohoAdminToken'); showDashboard(); }
         });
     </script>
